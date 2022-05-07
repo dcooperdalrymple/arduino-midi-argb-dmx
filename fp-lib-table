@@ -1,0 +1,4 @@
+(fp_lib_table
+  (lib (name "itsybitsy-32u4-5v")(type "KiCad")(uri "${KIPRJMOD}/itsybitsy-32u4-5v.pretty")(options "")(descr ""))
+  (lib (name "w_conn_av")(type "KiCad")(uri "${KIPRJMOD}/w_conn_av.pretty")(options "")(descr ""))
+)
