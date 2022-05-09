@@ -7,12 +7,18 @@
  */
 
 #include <MIDI.h>
+#include <MIDIUSB.h>
 #include <FastLED.h>
 #include <DmxSimple.h>
 
 #define LED 13
 
+#define MIDI_THRU       true
+#if MIDI_THRU
 #define MIDI_CHANNEL    MIDI_CHANNEL_OMNI
+#else
+#define MIDI_CHANNEL    9
+#endif
 
 #define ARGB_PIN        2
 #define ARGB_LEDS       12
@@ -67,8 +73,9 @@ void setup() {
     delay(3000); // Power On Delay
 
     MIDI.begin(MIDI_CHANNEL);
-    MIDI.setHandleNoteOn(MIDINoteOn);
-    MIDI.setHandleNoteOff(MIDINoteOff);
+    MIDI.setHandleControlChange(controlChange);
+    MIDI.setHandleNoteOn(noteOn);
+    MIDI.setHandleNoteOff(noteOff);
 
     FastLED.addLeds<ARGB_TYPE, ARGB_PIN, ARGB_ORDER>(leds, ARGB_LEDS).setCorrection(TypicalLEDStrip);
     FastLED.setBrightness(ARGB_BRIGHTNESS);
@@ -114,6 +121,7 @@ void loop() {
     }
 
     MIDI.read();
+    MidiUSB.read();
 }
 
 void FillLEDsFromPaletteColors(uint8_t index) {
@@ -149,12 +157,26 @@ void update_palette() {
     }
 }
 
-void MIDINoteOn(byte channel, byte note, byte velocity) {
+// Midi Events
+
+void controlChange(byte channel, byte control, byte value) {
+    #if MIDI_THRU
+    midiEventPacket_t event = {0x08, 0x80 | channel, control, value};
+    MidiUSB.sendMIDI(event);
+    #endif
+}
+
+void noteOn(byte channel, byte note, byte velocity) {
+    #if MIDI_THRU
+    midiEventPacket_t event = {0x09, 0x90 | channel, note, velocity};
+    MidiUSB.sendMIDI(event);
+    #endif
+
     if (MIDI_CHANNEL > 0 && channel != MIDI_CHANNEL) return;
     digitalWrite(LED, HIGH);
 
     if (velocity == 0) {
-        MIDINoteOff(channel, note, velocity);
+        noteOff(channel, note, velocity);
         return;
     }
 
@@ -209,7 +231,12 @@ void MIDINoteOn(byte channel, byte note, byte velocity) {
     update_palette();
 }
 
-void MIDINoteOff(byte channel, byte note, byte velocity) {
+void noteOff(byte channel, byte note, byte velocity) {
+    #if MIDI_THRU
+    midiEventPacket_t event = {0x0b, 0xb0 | channel, note, velocity};
+    MidiUSB.sendMIDI(event);
+    #endif
+
     if (MIDI_CHANNEL > 0 && channel != MIDI_CHANNEL) return;
     digitalWrite(LED, LOW);
 

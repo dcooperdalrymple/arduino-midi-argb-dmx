@@ -13,6 +13,7 @@ An XLR connector is provided as an alternative to the ARGB pin header. This conn
 > The software has not yet been finalized. MIDI messages may be re-organized to provide improve accessibility. See [arduino-midi-argb-dmx.ino](arduino-midi-argb-dmx.ino) for details.
 
 ## Software Dependencies
-* [Arduino MIDI Library](https://github.com/FortySevenEffects/arduino_midi_library/)
+* [MIDI](https://github.com/FortySevenEffects/arduino_midi_library/)
+* [MIDIUSB](https://github.com/arduino-libraries/MIDIUSB)
 * [FastLED](https://fastled.io/)
 * [DmxSimple](https://github.com/PaulStoffregen/DmxSimple)
