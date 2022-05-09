@@ -30,8 +30,9 @@ CRGB leds[ARGB_LEDS];
 #define RGB_R           9
 #define RGB_G           10
 #define RGB_B           11
+#define RGB_W           5
 
-#define DMX_PIN         5
+#define DMX_PIN         7
 #define DMX_CHANNELS    50
 #define DMX_R           1
 #define DMX_G           2
@@ -86,6 +87,8 @@ void setup() {
     analogWrite(RGB_G, 0);
     pinMode(RGB_B, OUTPUT);
     analogWrite(RGB_B, 0);
+    pinMode(RGB_W, OUTPUT);
+    analogWrite(RGB_W, 0);
 
     DmxSimple.usePin(4);
     DmxSimple.maxChannel(DMX_CHANNELS);
@@ -124,6 +127,12 @@ void loop() {
     MidiUSB.read();
 }
 
+// LED Functions
+
+uint8_t getW(CRGB color) {
+    return min(color.r, min(color.g, color.b));
+}
+
 void FillLEDsFromPaletteColors(uint8_t index) {
     uint8_t brightness = 255;
     CRGB c = ColorFromPalette(current_palette, index, brightness, blending);
@@ -131,6 +140,7 @@ void FillLEDsFromPaletteColors(uint8_t index) {
     analogWrite(RGB_R, c.r);
     analogWrite(RGB_G, c.g);
     analogWrite(RGB_B, c.b);
+    analogWrite(RGB_W, getW(c));
 
     DmxSimple.write(DMX_R, c.r);
     DmxSimple.write(DMX_G, c.g);
