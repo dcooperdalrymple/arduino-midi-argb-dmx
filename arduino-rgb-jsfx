@@ -1,0 +1,78 @@
+desc:Arduino MIDI to RGBW/ARGB/DMX
+
+slider1:channel=8<0,15,1{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16}>MIDI Channel
+slider2:mode=1<0,3,1{Off,RGB,HSV,Palette}>Color Mode
+
+slider3:palette=0<0,7,1{Cloud,Lava,Ocean,Forest,Rainbow,Rainbow Stripe,Party,Heat}>Palette
+slider4:speed=1<0,3.96875,0.03125>Speed
+
+slider5:r=0<0,127,1>R
+slider6:g=0<0,127,1>G
+slider7:b=0<0,127,1>B
+
+slider8:h=0<0,127,1>H
+slider9:s=0<0,127,1>S
+slider10:v=0<0,127,1>V
+
+@init
+pcbyte = $xc0;
+ccbyte = $xb0;
+
+curChannel = 0;
+curMode = -1;
+curPalette = -1;
+curSpeed = -1;
+curR = -1;
+curG = -1;
+curB = -1;
+curH = -1;
+curS = -1;
+curV = -1;
+
+prevMode = -1;
+prevPalette = -1;
+prevSpeed = -1;
+prevR = -1;
+prevG = -1;
+prevB = -1;
+prevH = -1;
+prevS = -1;
+prevV = -1;
+
+function maybeSendPC(chan, cur, prev)
+(
+  cur != prev ? midisend(0, pcbyte | (chan & $x0f), cur & $x7f);
+  cur;
+);
+
+function maybeSendCC(chan, ctrl, cur, prev)
+(
+  cur != prev ? midisend(0, ccbyte | (chan & $x0f), ctrl & $x7f, cur & $x7f);
+  cur;
+);
+
+@slider
+curChannel = channel;
+curMode = mode;
+curPalette = palette;
+curSpeed = speed;
+curR = r;
+curG = g;
+curB = b;
+curH = h;
+curS = s;
+curV = v;
+
+@block
+prevMode = maybeSendPC(curChannel, curMode, prevMode);
+
+prevPalette = maybeSendCC(curChannel, 12, curPalette, prevPalette);
+prevSpeed = maybeSendCC(curChannel, 13, curSpeed * 32, prevSpeed);
+
+prevR = maybeSendCC(curChannel, 16, curR, prevR);
+prevG = maybeSendCC(curChannel, 17, curG, prevG);
+prevB = maybeSendCC(curChannel, 18, curB, prevB);
+
+prevH = maybeSendCC(curChannel, 80, curH, prevH);
+prevS = maybeSendCC(curChannel, 81, curS, prevS);
+prevV = maybeSendCC(curChannel, 82, curV, prevV);
