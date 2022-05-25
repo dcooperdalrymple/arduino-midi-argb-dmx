@@ -6,19 +6,21 @@
  * Version:     1.0
  */
 
+#define USB_MIDI        false
+#define USB_TIMEOUT     2000
+
 #include <MIDI.h>
+#if USB_MIDI
 #include <MIDIUSB.h>
+#endif
 #include <FastLED.h>
 #include <DmxSimple.h>
 
-#define LED 13
+#define LED             13
+#define LED_DURATION    10
 
 #define MIDI_THRU       true
-#if MIDI_THRU
 #define MIDI_CHANNEL    MIDI_CHANNEL_OMNI
-#else
-#define MIDI_CHANNEL    9
-#endif
 
 #define ARGB_PIN        2
 #define ARGB_LEDS       12
@@ -39,15 +41,16 @@ CRGB leds[ARGB_LEDS];
 #define DMX_B           3
 
 #define COLOR_UPDATE    10
-#define PALETTE_UPDATE  40
-#define PALETTE_CHANGES 24
+#define PALETTE_UPDATE  1
+#define PALETTE_CHANGES 48
+#define PALETTE_ITERS   1
 enum ColorMode {
-    Unknown,
+    ColorOff,
     SolidRgb,
     SolidHsv,
     Palette
 };
-#define COLOR_MODES     5
+#define COLOR_MODES     4
 const TProgmemRGBPalette16 *palettes[] = {
     &CloudColors_p,
     &LavaColors_p,
@@ -59,7 +62,7 @@ const TProgmemRGBPalette16 *palettes[] = {
     &HeatColors_p
 };
 const uint8_t palette_count = sizeof(palettes) / sizeof(TProgmemRGBGradientPalettePtr);
-ColorMode colorMode = SolidRgb;
+ColorMode colorMode = ColorOff;
 CRGB color_rgb = CRGB::Black;
 CHSV color_hsv(0, 0, 0);
 CRGBPalette16 current_palette(CRGB::Black);
@@ -71,12 +74,38 @@ void setup() {
 
     pinMode(LED, OUTPUT);
     digitalWrite(LED, HIGH);
-    delay(3000); // Power On Delay
+
+    #if USB_MIDI
+    #else
+    Serial.begin(9600);
+    unsigned long usb_start = millis();
+    while (!Serial && millis() - usb_start < USB_TIMEOUT) { }
+    if (Serial) {
+        Serial.println("Arduino MIDI ARGB DMX - Version 1.0 - 2022 Cooper Dalrymple");
+
+        Serial.print("Midi Thru: ");
+        #if MIDI_THRU
+        Serial.print("On");
+        #else
+        Serial.print("Off");
+        #endif
+        Serial.println();
+
+        Serial.print("Midi Channel: ");
+        if (MIDI_CHANNEL > 0) {
+            Serial.print(MIDI_CHANNEL);
+        } else {
+            Serial.print("Omni");
+        }
+        Serial.println();
+    }
+    #endif
 
     MIDI.begin(MIDI_CHANNEL);
     MIDI.setHandleControlChange(controlChange);
     MIDI.setHandleNoteOn(noteOn);
     MIDI.setHandleNoteOff(noteOff);
+    MIDI.setHandleProgramChange(programChange);
 
     FastLED.addLeds<ARGB_TYPE, ARGB_PIN, ARGB_ORDER>(leds, ARGB_LEDS).setCorrection(TypicalLEDStrip);
     FastLED.setBrightness(ARGB_BRIGHTNESS);
@@ -104,6 +133,8 @@ uint8_t palette_index = 0;
 float palette_pos = 0;
 float palette_speed = 1;
 
+unsigned long led_millis = -1;
+
 void loop() {
     EVERY_N_MILLISECONDS(COLOR_UPDATE) {
         palette_pos += palette_speed;
@@ -120,11 +151,29 @@ void loop() {
     }
 
     EVERY_N_MILLISECONDS(PALETTE_UPDATE) {
+        #if PALETTE_ITERS > 1
+        for (uint8_t i = 0; i < PALETTE_ITERS; i++) {
+            nblendPaletteTowardPalette(current_palette, target_palette, PALETTE_CHANGES);
+        }
+        #else
         nblendPaletteTowardPalette(current_palette, target_palette, PALETTE_CHANGES);
+        #endif
+    }
+
+    if (led_millis >= 0 && millis() - led_millis > LED_DURATION) {
+        digitalWrite(LED, LOW);
+        led_millis = -1;
     }
 
     MIDI.read();
+    #if USB_MIDI
     MidiUSB.read();
+    #endif
+}
+
+void triggerLed() {
+    digitalWrite(LED, HIGH);
+    led_millis = millis();
 }
 
 // LED Functions
@@ -153,8 +202,10 @@ void FillLEDsFromPaletteColors(uint8_t index) {
     }
 }
 
-void update_palette() {
+void updatePalette() {
     switch (colorMode) {
+        case ColorOff:
+            target_palette = CRGBPalette16(CRGB::Black);
         case SolidRgb:
             target_palette = CRGBPalette16(color_rgb);
             break;
@@ -169,94 +220,103 @@ void update_palette() {
 
 // Midi Events
 
+bool updated = false;
 void controlChange(byte channel, byte control, byte value) {
     #if MIDI_THRU
-    midiEventPacket_t event = {0x08, 0x80 | channel, control, value};
+    MIDI.sendControlChange(control, value, channel);
+    #if USB_MIDI
+    midiEventPacket_t event = {0xb0 | channel, control, value};
     MidiUSB.sendMIDI(event);
     #endif
+    #endif
+
+    if (MIDI_CHANNEL > 0 && channel != MIDI_CHANNEL - 1) return;
+
+    updated = false;
+    switch (control) {
+
+        // Palette Controls (Effect Controller 1-2)
+        case 12:
+            if (value < palette_count) {
+                selected_palette = value;
+                updated = true;
+            }
+            break;
+        case 13:
+            palette_speed = (float)value / 32.0f;
+            updated = true;
+            break;
+
+        // RGB Controls (General Purpose Controller 1-4)
+        case 16:
+            color_rgb.r = value*2;
+            updated = true;
+            break;
+        case 17:
+            color_rgb.g = value*2;
+            updated = true;
+            break;
+        case 18:
+            color_rgb.b = value*2;
+            updated = true;
+            break;
+
+        // HSV Controls (General Purpose Controller 5-8)
+        case 80:
+            color_hsv.h = value*2;
+            updated = true;
+            break;
+        case 81:
+            color_hsv.s = value*2;
+            updated = true;
+            break;
+        case 82:
+            color_hsv.v = value*2;
+            updated = true;
+            break;
+
+    }
+
+    if (updated) {
+        triggerLed();
+        updatePalette();
+    }
+}
+
+void programChange(byte channel, byte program) {
+    #if MIDI_THRU
+    MIDI.sendProgramChange(program, channel);
+    #if USB_MIDI
+    midiEventPacket_t event = {0xc0 | channel, program};
+    MidiUSB.sendMIDI(event);
+    #endif
+    #endif
+
+    if (MIDI_CHANNEL > 0 && channel != MIDI_CHANNEL - 1) return;
+
+    if (program < COLOR_MODES) {
+        colorMode = (ColorMode)program;
+        triggerLed();
+        updatePalette();
+    }
 }
 
 void noteOn(byte channel, byte note, byte velocity) {
     #if MIDI_THRU
-    midiEventPacket_t event = {0x09, 0x90 | channel, note, velocity};
+    MIDI.sendNoteOn(note, velocity, channel);
+    #if USB_MIDI
+    midiEventPacket_t event = {0x90 | channel, note, velocity};
     MidiUSB.sendMIDI(event);
     #endif
-
-    if (MIDI_CHANNEL > 0 && channel != MIDI_CHANNEL) return;
-    digitalWrite(LED, HIGH);
-
-    if (velocity == 0) {
-        noteOff(channel, note, velocity);
-        return;
-    }
-
-    switch (note) {
-
-        // Type
-        case 0:
-            if (velocity < COLOR_MODES) colorMode = (ColorMode)velocity;
-            break;
-
-        // Red Intensity
-        case 1:
-            color_rgb.r = velocity*2;
-            break;
-
-        // Green Intensity
-        case 2:
-            color_rgb.g = velocity*2;
-            break;
-
-        // Blue Intensity
-        case 3:
-            color_rgb.b = velocity*2;
-            break;
-
-        // Hue
-        case 4:
-            color_hsv.h = velocity*2;
-            break;
-
-        // Saturation
-        case 5:
-            color_hsv.s = velocity*2;
-            break;
-
-        // Value
-        case 6:
-            color_hsv.v = velocity*2;
-            break;
-
-        // Palette Index
-        case 7:
-            if (velocity < palette_count) selected_palette = velocity;
-            break;
-
-        // Palette Speed
-        case 8:
-            palette_speed = (float)velocity / 32.0f;
-
-    }
-
-    update_palette();
+    #endif
 }
 
 void noteOff(byte channel, byte note, byte velocity) {
     #if MIDI_THRU
-    midiEventPacket_t event = {0x0b, 0xb0 | channel, note, velocity};
+    MIDI.sendNoteOff(note, velocity, channel);
+    #if USB_MIDI
+    midiEventPacket_t event = {0x80 | channel, note, velocity};
     MidiUSB.sendMIDI(event);
     #endif
-
-    if (MIDI_CHANNEL > 0 && channel != MIDI_CHANNEL) return;
-    digitalWrite(LED, LOW);
-
-    switch (note) {
-
-        // Red Intensity
-        case 60: // C3
-            analogWrite(RGB_R, 0);
-            DmxSimple.write(DMX_R, 0);
-            break;
-
-    }
+    #endif
 }
