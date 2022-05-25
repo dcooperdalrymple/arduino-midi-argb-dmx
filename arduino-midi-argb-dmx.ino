@@ -237,10 +237,9 @@ void controlChange(byte channel, byte control, byte value) {
 
         // Palette Controls (Effect Controller 1-2)
         case 12:
-            if (value < palette_count) {
-                selected_palette = value;
-                updated = true;
-            }
+            selected_palette = map(value, 0, 127, 0, palette_count);
+            if (selected_palette >= palette_count) selected_palette = palette_count - 1;
+            updated = true;
             break;
         case 13:
             palette_speed = (float)value / 32.0f;

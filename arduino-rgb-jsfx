@@ -66,7 +66,7 @@ curV = v;
 @block
 prevMode = maybeSendPC(curChannel, curMode, prevMode);
 
-prevPalette = maybeSendCC(curChannel, 12, curPalette, prevPalette);
+prevPalette = maybeSendCC(curChannel, 12, curPalette * 16, prevPalette);
 prevSpeed = maybeSendCC(curChannel, 13, curSpeed * 32, prevSpeed);
 
 prevR = maybeSendCC(curChannel, 16, curR, prevR);
