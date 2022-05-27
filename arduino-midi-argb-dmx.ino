@@ -119,7 +119,7 @@ void setup() {
     pinMode(RGB_W, OUTPUT);
     analogWrite(RGB_W, 0);
 
-    DmxSimple.usePin(4);
+    DmxSimple.usePin(DMX_PIN);
     DmxSimple.maxChannel(DMX_CHANNELS);
 
     digitalWrite(LED, LOW); // Indicate that initialization is complete
