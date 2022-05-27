@@ -6,7 +6,7 @@
  * Version:     1.0
  */
 
-#define USB_MIDI        false
+#define USB_MIDI        true
 #define USB_TIMEOUT     2000
 
 #include <MIDI.h>
@@ -38,7 +38,7 @@ CRGB *dmxLights;
 #define PALETTE_UPDATE  1
 #define PALETTE_CHANGES 48
 #define PALETTE_ITERS   1
-enum ColorMode {
+enum ColorMode : uint8_t {
     ColorOff,
     SolidRgb,
     SolidHsv,
@@ -63,8 +63,16 @@ CRGBPalette16 current_palette(CRGB::Black);
 TBlendType blending = LINEARBLEND;
 
 MIDI_CREATE_DEFAULT_INSTANCE();
+#define MidiMessage MIDI_NAMESPACE::MidiInterface<MIDI_NAMESPACE::SerialMIDI<HardwareSerial>>::MidiMessage
+#define MidiType MIDI_NAMESPACE::MidiType
 
 Settings settings;
+
+#if USB_MIDI
+void messageUartToUsb(MidiMessage message);
+#endif
+void controlChange(byte channel, byte control, byte value);
+void programChange(byte channel, byte program);
 
 void setup() {
 
@@ -97,11 +105,19 @@ void setup() {
     }
     #endif
 
-    MIDI.begin(MIDI_CHANNEL_OMNI);
+    pinMode(0, INPUT);
+    pinMode(1, OUTPUT);
+    if (settings.getMidiThru()) {
+        MIDI.turnThruOn();
+    } else {
+        MIDI.turnThruOff();
+    }
+    #if USB_MIDI
+    MIDI.setHandleMessage(messageUartToUsb);
+    #endif
     MIDI.setHandleControlChange(controlChange);
-    MIDI.setHandleNoteOn(noteOn);
-    MIDI.setHandleNoteOff(noteOff);
     MIDI.setHandleProgramChange(programChange);
+    MIDI.begin(MIDI_CHANNEL_OMNI);
 
     argbLights = new CRGB[settings.getArgbCount()];
     switch (settings.getArgbType()) {
@@ -196,7 +212,7 @@ void setup() {
 
     dmxLights = new CRGB[settings.getDmxCount()];
     FastLED.addLeds<DMXSIMPLE, DMX_PIN, DMX_ORDER>(dmxLights, settings.getDmxCount());
-    
+
     FastLED.setBrightness(settings.getBrightness());
 
     pinMode(RGB_R, OUTPUT);
@@ -220,6 +236,43 @@ float palette_pos = 0;
 float palette_speed = 1;
 
 unsigned long led_millis = -1;
+
+#if USB_MIDI
+void messageUartToUsb(MidiMessage message) {
+    midiEventPacket_t event;
+    event.header = 0xff;
+    switch (message.type) {
+        case MidiType::ProgramChange: // Program Change
+        case MidiType::AfterTouchChannel: // Channel Pressure
+            event.header = (message.type >> 4) & 0x0f;
+            event.byte1 = (message.type & 0xf0) | (message.channel & 0x0f);
+            event.byte2 = message.data1 & 0x7f;
+            break;
+        case MidiType::NoteOff:
+        case MidiType::NoteOn:
+        case MidiType::AfterTouchPoly:
+        case MidiType::ControlChange:
+        case MidiType::PitchBend:
+            event.header = (message.type >> 4) & 0x0f;
+            event.byte1 = (message.type & 0xf0) | (message.channel & 0x0f);
+            event.byte2 = message.data1 & 0x7f;
+            event.byte3 = message.data2 & 0x7f;
+            break;
+        case MidiType::TuneRequest:
+        case MidiType::Clock:
+        case MidiType::Start:
+        case MidiType::Continue:
+        case MidiType::Stop:
+            event.header = (message.type >> 4) & 0x0f;
+            event.byte1 = message.type;
+            break;
+    }
+    if (event.header != 0xff) {
+        MidiUSB.sendMIDI(event);
+        MidiUSB.flush();
+    }
+}
+#endif
 
 void loop() {
     EVERY_N_MILLISECONDS(COLOR_UPDATE) {
@@ -253,7 +306,36 @@ void loop() {
 
     MIDI.read();
     #if USB_MIDI
-    MidiUSB.read();
+    midiEventPacket_t event;
+    do {
+        event = MidiUSB.read();
+        switch (event.header & 0x0f) {
+            case 0x0b:
+                controlChange(event.byte1 & 0x0f, event.byte2 & 0x7f, event.byte3 & 0x7f);
+                break;
+            case 0x0c:
+                programChange(event.byte1 & 0x0f, event.byte2 & 0x7f);
+                break;
+        }
+        if (settings.getMidiThru()) {
+            switch (event.header & 0x0f) {
+                case 0x0c: // Program Change
+                case 0x0d: // Channel Pressure
+                    MIDI.send((MidiType)(event.header << 4), event.byte2, 0, event.byte1 & 0x0f);
+                    break;
+                case 0x08: // Note-off
+                case 0x09: // Note-on
+                case 0x0a: // Poly-KeyPress
+                case 0x0b: // Control Change
+                case 0x0e: // PitchBend Change
+                    MIDI.send((MidiType)(event.header << 4), event.byte2, event.byte3, event.byte1 & 0x0f);
+                    break;
+                case 0x0f: // Single Byte, TuneRequest, Clock, Start, Continue, Stop, etc.
+                    MIDI.sendCommon((MidiType)event.byte1, 0);
+                    break;
+            }
+        }
+    } while (event.header != 0);
     #endif
 }
 
@@ -307,14 +389,6 @@ void updatePalette() {
 
 bool updated = false;
 void controlChange(byte channel, byte control, byte value) {
-    if (settings.getMidiThru()) {
-        MIDI.sendControlChange(control, value, channel);
-        #if USB_MIDI
-        midiEventPacket_t event = {0xb0 | channel, control, value};
-        MidiUSB.sendMIDI(event);
-        #endif
-    }
-
     if (settings.getMidiChannel() > 0 && channel != settings.getMidiChannel() - 1) return;
 
     updated = false;
@@ -368,39 +442,11 @@ void controlChange(byte channel, byte control, byte value) {
 }
 
 void programChange(byte channel, byte program) {
-    if (settings.getMidiThru()) {
-        MIDI.sendProgramChange(program, channel);
-        #if USB_MIDI
-        midiEventPacket_t event = {0xc0 | channel, program};
-        MidiUSB.sendMIDI(event);
-        #endif
-    }
-
     if (settings.getMidiChannel() > 0 && channel != settings.getMidiChannel() - 1) return;
 
     if (program < COLOR_MODES) {
         colorMode = (ColorMode)program;
         triggerLed();
         updatePalette();
-    }
-}
-
-void noteOn(byte channel, byte note, byte velocity) {
-    if (settings.getMidiThru()) {
-        MIDI.sendNoteOn(note, velocity, channel);
-        #if USB_MIDI
-        midiEventPacket_t event = {0x90 | channel, note, velocity};
-        MidiUSB.sendMIDI(event);
-        #endif
-    }
-}
-
-void noteOff(byte channel, byte note, byte velocity) {
-    if (settings.getMidiThru()) {
-        MIDI.sendNoteOff(note, velocity, channel);
-        #if USB_MIDI
-        midiEventPacket_t event = {0x80 | channel, note, velocity};
-        MidiUSB.sendMIDI(event);
-        #endif
     }
 }

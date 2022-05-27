@@ -9,7 +9,7 @@
 #define SETTINGS_VERSION    1
 #define SETTINGS_OFFSET     0x02
 
-enum FastLedType {
+enum FastLedType : uint8_t {
     FLTYPE_NONE,
     FLTYPE_NEOPIXEL,
     FLTYPE_SM16703,
