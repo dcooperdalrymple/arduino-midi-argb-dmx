@@ -13,32 +13,26 @@
 #if USB_MIDI
 #include <MIDIUSB.h>
 #endif
-#include <FastLED.h>
 #include <DmxSimple.h>
+#include <FastLED.h>
+
+#include "settings.h"
 
 #define LED             13
 #define LED_DURATION    10
 
-#define MIDI_THRU       true
-#define MIDI_CHANNEL    MIDI_CHANNEL_OMNI
-
 #define ARGB_PIN        2
-#define ARGB_LEDS       12
-#define ARGB_BRIGHTNESS 64
-#define ARGB_TYPE       WS2812B
 #define ARGB_ORDER      GRB
-CRGB leds[ARGB_LEDS];
+CRGB *argbLights;
+
+#define DMX_PIN         7
+#define DMX_ORDER       GBR
+CRGB *dmxLights;
 
 #define RGB_R           9
 #define RGB_G           10
 #define RGB_B           11
 #define RGB_W           5
-
-#define DMX_PIN         7
-#define DMX_CHANNELS    50
-#define DMX_R           1
-#define DMX_G           2
-#define DMX_B           3
 
 #define COLOR_UPDATE    10
 #define PALETTE_UPDATE  1
@@ -70,6 +64,8 @@ TBlendType blending = LINEARBLEND;
 
 MIDI_CREATE_DEFAULT_INSTANCE();
 
+Settings settings;
+
 void setup() {
 
     pinMode(LED, OUTPUT);
@@ -84,16 +80,16 @@ void setup() {
         Serial.println("Arduino MIDI ARGB DMX - Version 1.0 - 2022 Cooper Dalrymple");
 
         Serial.print("Midi Thru: ");
-        #if MIDI_THRU
-        Serial.print("On");
-        #else
-        Serial.print("Off");
-        #endif
+        if (settings.getMidiThru()) {
+            Serial.print("On");
+        } else {
+            Serial.print("Off");
+        }
         Serial.println();
 
         Serial.print("Midi Channel: ");
-        if (MIDI_CHANNEL > 0) {
-            Serial.print(MIDI_CHANNEL);
+        if (settings.getMidiChannel() > 0) {
+            Serial.print(settings.getMidiChannel());
         } else {
             Serial.print("Omni");
         }
@@ -101,14 +97,107 @@ void setup() {
     }
     #endif
 
-    MIDI.begin(MIDI_CHANNEL);
+    MIDI.begin(MIDI_CHANNEL_OMNI);
     MIDI.setHandleControlChange(controlChange);
     MIDI.setHandleNoteOn(noteOn);
     MIDI.setHandleNoteOff(noteOff);
     MIDI.setHandleProgramChange(programChange);
 
-    FastLED.addLeds<ARGB_TYPE, ARGB_PIN, ARGB_ORDER>(leds, ARGB_LEDS).setCorrection(TypicalLEDStrip);
-    FastLED.setBrightness(ARGB_BRIGHTNESS);
+    argbLights = new CRGB[settings.getArgbCount()];
+    switch (settings.getArgbType()) {
+        case FLTYPE_NEOPIXEL:
+            FastLED.addLeds<NEOPIXEL, ARGB_PIN>(argbLights, settings.getArgbCount()).setCorrection(TypicalLEDStrip);
+            break;
+        case FLTYPE_SM16703:
+            //FastLED.addLeds<SM16703, ARGB_PIN, ARGB_ORDER>(argbLights, settings.getArgbCount()).setCorrection(TypicalLEDStrip);
+            break;
+        case FLTYPE_TM1829:
+            //FastLED.addLeds<TM1829, ARGB_PIN, ARGB_ORDER>(argbLights, settings.getArgbCount()).setCorrection(TypicalLEDStrip);
+            break;
+        case FLTYPE_TM1812:
+            //FastLED.addLeds<TM1812, ARGB_PIN, ARGB_ORDER>(argbLights, settings.getArgbCount()).setCorrection(TypicalLEDStrip);
+            break;
+        case FLTYPE_TM1809:
+            FastLED.addLeds<TM1809, ARGB_PIN, ARGB_ORDER>(argbLights, settings.getArgbCount()).setCorrection(TypicalLEDStrip);
+            break;
+        case FLTYPE_TM1804:
+            FastLED.addLeds<TM1804, ARGB_PIN, ARGB_ORDER>(argbLights, settings.getArgbCount()).setCorrection(TypicalLEDStrip);
+            break;
+        case FLTYPE_TM1803:
+            FastLED.addLeds<TM1803, ARGB_PIN, ARGB_ORDER>(argbLights, settings.getArgbCount()).setCorrection(TypicalLEDStrip);
+            break;
+        case FLTYPE_UCS1903:
+            FastLED.addLeds<UCS1903, ARGB_PIN, ARGB_ORDER>(argbLights, settings.getArgbCount()).setCorrection(TypicalLEDStrip);
+            break;
+        case FLTYPE_UCS1903B:
+            //FastLED.addLeds<UCS1903B, ARGB_PIN, ARGB_ORDER>(argbLights, settings.getArgbCount()).setCorrection(TypicalLEDStrip);
+            break;
+        case FLTYPE_UCS1904:
+            //FastLED.addLeds<UCS1904, ARGB_PIN, ARGB_ORDER>(argbLights, settings.getArgbCount()).setCorrection(TypicalLEDStrip);
+            break;
+        case FLTYPE_UCS2903:
+            //FastLED.addLeds<UCS2903, ARGB_PIN, ARGB_ORDER>(argbLights, settings.getArgbCount()).setCorrection(TypicalLEDStrip);
+            break;
+        case FLTYPE_WS2812:
+            FastLED.addLeds<WS2812, ARGB_PIN, ARGB_ORDER>(argbLights, settings.getArgbCount()).setCorrection(TypicalLEDStrip);
+            break;
+        case FLTYPE_WS2852:
+            //FastLED.addLeds<WS2852, ARGB_PIN, ARGB_ORDER>(argbLights, settings.getArgbCount()).setCorrection(TypicalLEDStrip);
+            break;
+        case FLTYPE_WS2812B:
+            FastLED.addLeds<WS2812B, ARGB_PIN, ARGB_ORDER>(argbLights, settings.getArgbCount()).setCorrection(TypicalLEDStrip);
+            break;
+        case FLTYPE_GS1903:
+            //FastLED.addLeds<GS1903, ARGB_PIN, ARGB_ORDER>(argbLights, settings.getArgbCount()).setCorrection(TypicalLEDStrip);
+            break;
+        case FLTYPE_SK6812:
+            //FastLED.addLeds<SK6812, ARGB_PIN, ARGB_ORDER>(argbLights, settings.getArgbCount()).setCorrection(TypicalLEDStrip);
+            break;
+        case FLTYPE_SK6822:
+            //FastLED.addLeds<SK6822, ARGB_PIN, ARGB_ORDER>(argbLights, settings.getArgbCount()).setCorrection(TypicalLEDStrip);
+            break;
+        case FLTYPE_APA106:
+            //FastLED.addLeds<APA106, ARGB_PIN, ARGB_ORDER>(argbLights, settings.getArgbCount()).setCorrection(TypicalLEDStrip);
+            break;
+        case FLTYPE_PL9823:
+            //FastLED.addLeds<PL9823, ARGB_PIN, ARGB_ORDER>(argbLights, settings.getArgbCount()).setCorrection(TypicalLEDStrip);
+            break;
+        case FLTYPE_WS2811:
+            FastLED.addLeds<WS2811, ARGB_PIN, ARGB_ORDER>(argbLights, settings.getArgbCount()).setCorrection(TypicalLEDStrip);
+            break;
+        case FLTYPE_WS2813:
+            FastLED.addLeds<WS2813, ARGB_PIN, ARGB_ORDER>(argbLights, settings.getArgbCount()).setCorrection(TypicalLEDStrip);
+            break;
+        case FLTYPE_APA104:
+            //FastLED.addLeds<APA104, ARGB_PIN, ARGB_ORDER>(argbLights, settings.getArgbCount()).setCorrection(TypicalLEDStrip);
+            break;
+        case FLTYPE_WS2811_400:
+            //FastLED.addLeds<WS2811_400, ARGB_PIN, ARGB_ORDER>(argbLights, settings.getArgbCount()).setCorrection(TypicalLEDStrip);
+            break;
+        case FLTYPE_GE8822:
+            //FastLED.addLeds<GE8822, ARGB_PIN, ARGB_ORDER>(argbLights, settings.getArgbCount()).setCorrection(TypicalLEDStrip);
+            break;
+        case FLTYPE_GW6205:
+            FastLED.addLeds<GW6205, ARGB_PIN, ARGB_ORDER>(argbLights, settings.getArgbCount()).setCorrection(TypicalLEDStrip);
+            break;
+        case FLTYPE_GW6205_400:
+            //FastLED.addLeds<GW6205_400, ARGB_PIN, ARGB_ORDER>(argbLights, settings.getArgbCount()).setCorrection(TypicalLEDStrip);
+            break;
+        case FLTYPE_LPD1886:
+            //FastLED.addLeds<LPD1886, ARGB_PIN, ARGB_ORDER>(argbLights, settings.getArgbCount()).setCorrection(TypicalLEDStrip);
+            break;
+        case FLTYPE_LPD1886_8BIT:
+            //FastLED.addLeds<LPD1886_8BIT, ARGB_PIN, ARGB_ORDER>(argbLights, settings.getArgbCount()).setCorrection(TypicalLEDStrip);
+            break;
+        case FLTYPE_NONE:
+        default:
+            break;
+    }
+
+    dmxLights = new CRGB[settings.getDmxCount()];
+    FastLED.addLeds<DMXSIMPLE, DMX_PIN, DMX_ORDER>(dmxLights, settings.getDmxCount());
+    
+    FastLED.setBrightness(settings.getBrightness());
 
     pinMode(RGB_R, OUTPUT);
     analogWrite(RGB_R, 0);
@@ -118,9 +207,6 @@ void setup() {
     analogWrite(RGB_B, 0);
     pinMode(RGB_W, OUTPUT);
     analogWrite(RGB_W, 0);
-
-    DmxSimple.usePin(DMX_PIN);
-    DmxSimple.maxChannel(DMX_CHANNELS);
 
     digitalWrite(LED, LOW); // Indicate that initialization is complete
 
@@ -191,14 +277,13 @@ void FillLEDsFromPaletteColors(uint8_t index) {
     analogWrite(RGB_B, c.b);
     analogWrite(RGB_W, getW(c));
 
-    DmxSimple.write(DMX_R, c.r);
-    DmxSimple.write(DMX_G, c.g);
-    DmxSimple.write(DMX_B, c.b);
-
-    leds[0] = c;
-    for (int i = 1; i < ARGB_LEDS; i++) {
+    argbLights[0] = c;
+    dmxLights[0] = c;
+    for (int i = 1; i < max(settings.getArgbCount(), settings.getDmxCount()); i++) {
         index += 3;
-        leds[i] = ColorFromPalette(current_palette, index, brightness, blending);
+        c = ColorFromPalette(current_palette, index, brightness, blending);
+        if (i < settings.getArgbCount()) argbLights[i] = c;
+        if (i < settings.getDmxCount()) dmxLights[i] = c;
     }
 }
 
@@ -222,15 +307,15 @@ void updatePalette() {
 
 bool updated = false;
 void controlChange(byte channel, byte control, byte value) {
-    #if MIDI_THRU
-    MIDI.sendControlChange(control, value, channel);
-    #if USB_MIDI
-    midiEventPacket_t event = {0xb0 | channel, control, value};
-    MidiUSB.sendMIDI(event);
-    #endif
-    #endif
+    if (settings.getMidiThru()) {
+        MIDI.sendControlChange(control, value, channel);
+        #if USB_MIDI
+        midiEventPacket_t event = {0xb0 | channel, control, value};
+        MidiUSB.sendMIDI(event);
+        #endif
+    }
 
-    if (MIDI_CHANNEL > 0 && channel != MIDI_CHANNEL - 1) return;
+    if (settings.getMidiChannel() > 0 && channel != settings.getMidiChannel() - 1) return;
 
     updated = false;
     switch (control) {
@@ -283,15 +368,15 @@ void controlChange(byte channel, byte control, byte value) {
 }
 
 void programChange(byte channel, byte program) {
-    #if MIDI_THRU
-    MIDI.sendProgramChange(program, channel);
-    #if USB_MIDI
-    midiEventPacket_t event = {0xc0 | channel, program};
-    MidiUSB.sendMIDI(event);
-    #endif
-    #endif
+    if (settings.getMidiThru()) {
+        MIDI.sendProgramChange(program, channel);
+        #if USB_MIDI
+        midiEventPacket_t event = {0xc0 | channel, program};
+        MidiUSB.sendMIDI(event);
+        #endif
+    }
 
-    if (MIDI_CHANNEL > 0 && channel != MIDI_CHANNEL - 1) return;
+    if (settings.getMidiChannel() > 0 && channel != settings.getMidiChannel() - 1) return;
 
     if (program < COLOR_MODES) {
         colorMode = (ColorMode)program;
@@ -301,21 +386,21 @@ void programChange(byte channel, byte program) {
 }
 
 void noteOn(byte channel, byte note, byte velocity) {
-    #if MIDI_THRU
-    MIDI.sendNoteOn(note, velocity, channel);
-    #if USB_MIDI
-    midiEventPacket_t event = {0x90 | channel, note, velocity};
-    MidiUSB.sendMIDI(event);
-    #endif
-    #endif
+    if (settings.getMidiThru()) {
+        MIDI.sendNoteOn(note, velocity, channel);
+        #if USB_MIDI
+        midiEventPacket_t event = {0x90 | channel, note, velocity};
+        MidiUSB.sendMIDI(event);
+        #endif
+    }
 }
 
 void noteOff(byte channel, byte note, byte velocity) {
-    #if MIDI_THRU
-    MIDI.sendNoteOff(note, velocity, channel);
-    #if USB_MIDI
-    midiEventPacket_t event = {0x80 | channel, note, velocity};
-    MidiUSB.sendMIDI(event);
-    #endif
-    #endif
+    if (settings.getMidiThru()) {
+        MIDI.sendNoteOff(note, velocity, channel);
+        #if USB_MIDI
+        midiEventPacket_t event = {0x80 | channel, note, velocity};
+        MidiUSB.sendMIDI(event);
+        #endif
+    }
 }
