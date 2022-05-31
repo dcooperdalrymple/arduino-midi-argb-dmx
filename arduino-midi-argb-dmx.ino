@@ -113,12 +113,14 @@ void setup() {
     #endif
     MIDICoreSerial.setHandleControlChange(controlChange);
     MIDICoreSerial.setHandleProgramChange(programChange);
+    MIDICoreSerial.setHandleSystemExclusive(systemExclusive);
     MIDICoreSerial.begin(MIDI_CHANNEL_OMNI);
 
     #if USB_MIDI
     MIDICoreUSB.setHandleMessage(messageUsbToUart);
     MIDICoreUSB.setHandleControlChange(controlChange);
     MIDICoreUSB.setHandleProgramChange(programChange);
+    MIDICoreUSB.setHandleSystemExclusive(systemExclusive);
     MIDICoreUSB.begin(MIDI_CHANNEL_OMNI);
     #endif
 
@@ -413,4 +415,24 @@ void programChange(byte channel, byte program) {
         triggerLed();
         updatePalette();
     }
+}
+
+#define SYSEX_SUCCESS   0x70
+#define SYSEX_ERROR     0x71
+void systemExclusive(byte* data, unsigned size) {
+    digitalWrite(LED, HIGH);
+    byte* sysexResponse = new byte[3];
+    sysexResponse[0] = MANUFACTURER_ID;
+    sysexResponse[1] = DEVICE_ID;
+    if (!settings.handleSysex(data, size)) {
+        sysexResponse[2] = SYSEX_ERROR;
+    } else {
+        sysexResponse[2] = SYSEX_SUCCESS;
+    }
+    MIDICoreSerial.sendSysEx(3, sysexResponse);
+    #if USB_MIDI
+    MIDICoreUSB.sendSysEx(3, sysexResponse);
+    #endif
+    delete sysexResponse;
+    digitalWrite(LED, LOW);
 }

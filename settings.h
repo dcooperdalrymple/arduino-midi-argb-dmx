@@ -6,10 +6,13 @@
 #include <MIDI.h>
 #include <FastLED.h>
 
-#define SETTINGS_ID         0xaa
 #include "preset.h"
+
+#define MANUFACTURER_ID     0xcd
+#define DEVICE_ID           0xc5
 #define SETTINGS_VERSION    1
-#define SETTINGS_OFFSET     0x02
+
+#define SETTINGS_OFFSET     0x03
 #define PRESET_OFFSET       0x10
 #define PRESET_SIZE         0x10
 #define PRESET_COUNT        15
@@ -88,6 +91,8 @@ public:
     FastLedType getArgbType();
 
     uint8_t getDmxCount();
+
+    bool handleSysex(byte* data, unsigned size);
 
 };
 

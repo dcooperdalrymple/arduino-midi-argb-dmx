@@ -35,8 +35,9 @@ uint8_t Settings::getDmxCount() {
 }
 
 uint8_t Settings::read_version() {
-    if (EEPROM.read(0x00) != SETTINGS_ID) return 0;
-    return EEPROM.read(0x01);
+    if (EEPROM.read(0x00) != MANUFACTURER_ID) return 0;
+    if (EEPROM.read(0x01) != DEVICE_ID) return 0;
+    return EEPROM.read(0x02);
 }
 
 bool Settings::verify() {
@@ -67,8 +68,24 @@ void Settings::reset() {
     }
 
     // Identifier & Version
-    EEPROM.write(0x00, SETTINGS_ID);
-    EEPROM.write(0x01, SETTINGS_VERSION);
+    EEPROM.write(0x00, MANUFACTURER_ID);
+    EEPROM.write(0x01, DEVICE_ID);
+    EEPROM.write(0x02, SETTINGS_VERSION);
 
     write_data();
+}
+
+bool Settings::handleSysex(byte* data, unsigned size) {
+    if (size != 256) return false;
+
+    if (data[0x00] != MANUFACTURER_ID) return false;
+    if (data[0x01] != DEVICE_ID) return false;
+    if (data[0x02] != SETTINGS_VERSION) return false;
+
+    for (unsigned i = 0; i < size; i++) {
+        EEPROM.write(i, data[i]);
+    }
+
+    read_data();
+    return true;
 }
