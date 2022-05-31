@@ -79,6 +79,6 @@ Copy and paste `arduino-rgb-jsfx` into your REAPER JSFX install directory (ie: .
 
 ## Software Dependencies
 * [MIDI](https://github.com/FortySevenEffects/arduino_midi_library/)
-* [MIDIUSB](https://github.com/arduino-libraries/MIDIUSB)
+* [Arduino USB-MIDI Transport](https://github.com/lathoub/Arduino-USBMIDI)
 * [FastLED](https://fastled.io/)
 * [DmxSimple](https://github.com/PaulStoffregen/DmxSimple)

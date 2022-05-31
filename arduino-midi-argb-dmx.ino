@@ -9,10 +9,25 @@
 #define USB_MIDI        true
 #define USB_TIMEOUT     2000
 
-#include <MIDI.h>
 #if USB_MIDI
-#include <MIDIUSB.h>
+#include <USB-MIDI.h>
+#else
+#include <MIDI.h>
 #endif
+
+struct CustomMidiSettings : public MIDI_NAMESPACE::DefaultSettings {
+    static const unsigned SysExMaxSize = 256;
+    static const unsigned BaudRate = 31250;
+};
+#define MidiType MIDI_NAMESPACE::MidiType
+
+#define SerialMidiMessage MIDI_NAMESPACE::MidiInterface<MIDI_NAMESPACE::SerialMIDI<HardwareSerial>, CustomMidiSettings>::MidiMessage
+MIDI_CREATE_CUSTOM_INSTANCE(HardwareSerial, Serial1, MIDICoreSerial, CustomMidiSettings);
+#if USB_MIDI
+#define UsbMidiMessage MIDI_NAMESPACE::MidiInterface<USBMIDI_NAMESPACE::usbMidiTransport, CustomMidiSettings>::MidiMessage
+USBMIDI_CREATE_CUSTOM_INSTANCE(0, MIDICoreUSB, CustomMidiSettings);
+#endif
+
 #include <DmxSimple.h>
 #include <FastLED.h>
 
@@ -62,14 +77,11 @@ CHSV color_hsv(0, 0, 0);
 CRGBPalette16 current_palette(CRGB::Black);
 TBlendType blending = LINEARBLEND;
 
-MIDI_CREATE_DEFAULT_INSTANCE();
-#define MidiMessage MIDI_NAMESPACE::MidiInterface<MIDI_NAMESPACE::SerialMIDI<HardwareSerial>>::MidiMessage
-#define MidiType MIDI_NAMESPACE::MidiType
-
 Settings settings;
 
 #if USB_MIDI
-void messageUartToUsb(MidiMessage message);
+void messageUartToUsb(SerialMidiMessage message);
+void messageUsbToUart(UsbMidiMessage message);
 #endif
 void controlChange(byte channel, byte control, byte value);
 void programChange(byte channel, byte program);
@@ -108,16 +120,23 @@ void setup() {
     pinMode(0, INPUT);
     pinMode(1, OUTPUT);
     if (settings.getMidiThru()) {
-        MIDI.turnThruOn();
+        MIDICoreSerial.turnThruOn();
     } else {
-        MIDI.turnThruOff();
+        MIDICoreSerial.turnThruOff();
     }
     #if USB_MIDI
-    MIDI.setHandleMessage(messageUartToUsb);
+    MIDICoreSerial.setHandleMessage(messageUartToUsb);
     #endif
-    MIDI.setHandleControlChange(controlChange);
-    MIDI.setHandleProgramChange(programChange);
-    MIDI.begin(MIDI_CHANNEL_OMNI);
+    MIDICoreSerial.setHandleControlChange(controlChange);
+    MIDICoreSerial.setHandleProgramChange(programChange);
+    MIDICoreSerial.begin(MIDI_CHANNEL_OMNI);
+
+    #if USB_MIDI
+    MIDICoreUSB.setHandleMessage(messageUsbToUart);
+    MIDICoreUSB.setHandleControlChange(controlChange);
+    MIDICoreUSB.setHandleProgramChange(programChange);
+    MIDICoreUSB.begin(MIDI_CHANNEL_OMNI);
+    #endif
 
     argbLights = new CRGB[settings.getArgbCount()];
     switch (settings.getArgbType()) {
@@ -238,39 +257,31 @@ float palette_speed = 1;
 unsigned long led_millis = -1;
 
 #if USB_MIDI
-void messageUartToUsb(MidiMessage message) {
-    midiEventPacket_t event;
-    event.header = 0xff;
-    switch (message.type) {
-        case MidiType::ProgramChange: // Program Change
-        case MidiType::AfterTouchChannel: // Channel Pressure
-            event.header = (message.type >> 4) & 0x0f;
-            event.byte1 = (message.type & 0xf0) | (message.channel & 0x0f);
-            event.byte2 = message.data1 & 0x7f;
-            break;
-        case MidiType::NoteOff:
-        case MidiType::NoteOn:
-        case MidiType::AfterTouchPoly:
-        case MidiType::ControlChange:
-        case MidiType::PitchBend:
-            event.header = (message.type >> 4) & 0x0f;
-            event.byte1 = (message.type & 0xf0) | (message.channel & 0x0f);
-            event.byte2 = message.data1 & 0x7f;
-            event.byte3 = message.data2 & 0x7f;
-            break;
-        case MidiType::TuneRequest:
-        case MidiType::Clock:
-        case MidiType::Start:
-        case MidiType::Continue:
-        case MidiType::Stop:
-            event.header = (message.type >> 4) & 0x0f;
-            event.byte1 = message.type;
-            break;
+void messageUartToUsb(SerialMidiMessage message) {
+    UsbMidiMessage usbMessage;
+    usbMessage.channel = message.channel;
+    usbMessage.type = message.type;
+    usbMessage.data1 = message.data1;
+    usbMessage.data2 = message.data2;
+    if (message.type == MidiType::SystemExclusive) {
+        memcpy(usbMessage.sysexArray, message.sysexArray, message.sSysExMaxSize & sizeof(MIDI_NAMESPACE::DataByte));
     }
-    if (event.header != 0xff) {
-        MidiUSB.sendMIDI(event);
-        MidiUSB.flush();
+    usbMessage.valid = message.valid;
+    usbMessage.length = message.length;
+    MIDICoreUSB.send(usbMessage);
+}
+void messageUsbToUart(UsbMidiMessage message) {
+    SerialMidiMessage serialMessage;
+    serialMessage.channel = message.channel;
+    serialMessage.type = message.type;
+    serialMessage.data1 = message.data1;
+    serialMessage.data2 = message.data2;
+    if (message.type == MidiType::SystemExclusive) {
+        memcpy(serialMessage.sysexArray, message.sysexArray, message.sSysExMaxSize & sizeof(MIDI_NAMESPACE::DataByte));
     }
+    serialMessage.valid = message.valid;
+    serialMessage.length = message.length;
+    MIDICoreSerial.send(serialMessage);
 }
 #endif
 
@@ -304,38 +315,9 @@ void loop() {
         led_millis = -1;
     }
 
-    MIDI.read();
+    MIDICoreSerial.read();
     #if USB_MIDI
-    midiEventPacket_t event;
-    do {
-        event = MidiUSB.read();
-        switch (event.header & 0x0f) {
-            case 0x0b:
-                controlChange(event.byte1 & 0x0f, event.byte2 & 0x7f, event.byte3 & 0x7f);
-                break;
-            case 0x0c:
-                programChange(event.byte1 & 0x0f, event.byte2 & 0x7f);
-                break;
-        }
-        if (settings.getMidiThru()) {
-            switch (event.header & 0x0f) {
-                case 0x0c: // Program Change
-                case 0x0d: // Channel Pressure
-                    MIDI.send((MidiType)(event.header << 4), event.byte2, 0, event.byte1 & 0x0f);
-                    break;
-                case 0x08: // Note-off
-                case 0x09: // Note-on
-                case 0x0a: // Poly-KeyPress
-                case 0x0b: // Control Change
-                case 0x0e: // PitchBend Change
-                    MIDI.send((MidiType)(event.header << 4), event.byte2, event.byte3, event.byte1 & 0x0f);
-                    break;
-                case 0x0f: // Single Byte, TuneRequest, Clock, Start, Continue, Stop, etc.
-                    MIDI.sendCommon((MidiType)event.byte1, 0);
-                    break;
-            }
-        }
-    } while (event.header != 0);
+    MIDICoreUSB.read();
     #endif
 }
 
