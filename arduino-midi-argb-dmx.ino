@@ -31,6 +31,9 @@ USBMIDI_CREATE_CUSTOM_INSTANCE(0, MIDICoreUSB, CustomMidiSettings);
 #include <DmxSimple.h>
 #include <FastLED.h>
 
+#include "color.h"
+#include "palettes.h"
+#include "preset.h"
 #include "settings.h"
 
 #define LED             13
@@ -53,27 +56,8 @@ CRGB *dmxLights;
 #define PALETTE_UPDATE  1
 #define PALETTE_CHANGES 48
 #define PALETTE_ITERS   1
-enum ColorMode : uint8_t {
-    ColorOff,
-    SolidRgb,
-    SolidHsv,
-    Palette
-};
-#define COLOR_MODES     4
-const TProgmemRGBPalette16 *palettes[] = {
-    &CloudColors_p,
-    &LavaColors_p,
-    &OceanColors_p,
-    &ForestColors_p,
-    &RainbowColors_p,
-    &RainbowStripeColors_p,
-    &PartyColors_p,
-    &HeatColors_p
-};
-const uint8_t palette_count = sizeof(palettes) / sizeof(TProgmemRGBGradientPalettePtr);
-ColorMode colorMode = ColorOff;
-CRGB color_rgb = CRGB::Black;
-CHSV color_hsv(0, 0, 0);
+
+PresetData current_preset = default_preset;
 CRGBPalette16 current_palette(CRGB::Black);
 TBlendType blending = LINEARBLEND;
 
@@ -248,11 +232,9 @@ void setup() {
 }
 
 CRGBPalette16 target_palette(CRGB::Black);
-uint8_t selected_palette = 0;
 unsigned long palette_millis;
 uint8_t palette_index = 0;
 float palette_pos = 0;
-float palette_speed = 1;
 
 unsigned long led_millis = -1;
 
@@ -287,11 +269,11 @@ void messageUsbToUart(UsbMidiMessage message) {
 
 void loop() {
     EVERY_N_MILLISECONDS(COLOR_UPDATE) {
-        palette_pos += palette_speed;
+        palette_pos += current_preset.palette_speed;
         if (palette_pos >= 256.0f) palette_pos -= 256.0f;
         palette_index = (uint8_t)palette_pos;
 
-        switch (colorMode) {
+        switch (current_preset.mode) {
             default:
                 FillLEDsFromPaletteColors(palette_index);
                 break;
@@ -352,17 +334,17 @@ void FillLEDsFromPaletteColors(uint8_t index) {
 }
 
 void updatePalette() {
-    switch (colorMode) {
+    switch (current_preset.mode) {
         case ColorOff:
             target_palette = CRGBPalette16(CRGB::Black);
         case SolidRgb:
-            target_palette = CRGBPalette16(color_rgb);
+            target_palette = CRGBPalette16(current_preset.color_rgb);
             break;
         case SolidHsv:
-            target_palette = CRGBPalette16(color_hsv);
+            target_palette = CRGBPalette16(current_preset.color_hsv);
             break;
         case Palette:
-            target_palette = *palettes[selected_palette];
+            target_palette = *palettes[current_preset.palette];
             break;
     }
 }
@@ -378,40 +360,40 @@ void controlChange(byte channel, byte control, byte value) {
 
         // Palette Controls (Effect Controller 1-2)
         case 12:
-            selected_palette = map(value, 0, 127, 0, palette_count);
-            if (selected_palette >= palette_count) selected_palette = palette_count - 1;
+            current_preset.palette = map(value, 0, 127, 0, palette_count);
+            if (current_preset.palette >= palette_count) current_preset.palette = palette_count - 1;
             updated = true;
             break;
         case 13:
-            palette_speed = (float)value / 32.0f;
+            current_preset.palette_speed = (float)value / 32.0f;
             updated = true;
             break;
 
         // RGB Controls (General Purpose Controller 1-4)
         case 16:
-            color_rgb.r = value*2;
+            current_preset.color_rgb.r = value*2;
             updated = true;
             break;
         case 17:
-            color_rgb.g = value*2;
+            current_preset.color_rgb.g = value*2;
             updated = true;
             break;
         case 18:
-            color_rgb.b = value*2;
+            current_preset.color_rgb.b = value*2;
             updated = true;
             break;
 
         // HSV Controls (General Purpose Controller 5-8)
         case 80:
-            color_hsv.h = value*2;
+            current_preset.color_hsv.h = value*2;
             updated = true;
             break;
         case 81:
-            color_hsv.s = value*2;
+            current_preset.color_hsv.s = value*2;
             updated = true;
             break;
         case 82:
-            color_hsv.v = value*2;
+            current_preset.color_hsv.v = value*2;
             updated = true;
             break;
 
@@ -427,7 +409,7 @@ void programChange(byte channel, byte program) {
     if (settings.getMidiChannel() > 0 && channel != settings.getMidiChannel() - 1) return;
 
     if (program < COLOR_MODES) {
-        colorMode = (ColorMode)program;
+        current_preset.mode = (ColorMode)program;
         triggerLed();
         updatePalette();
     }

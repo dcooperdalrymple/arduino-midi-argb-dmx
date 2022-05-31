@@ -1,13 +1,18 @@
 #ifndef SETTINGS_H
 #define SETTINGS_H
 
+#include <avr/pgmspace.h>
 #include <EEPROM.h>
 #include <MIDI.h>
 #include <FastLED.h>
 
 #define SETTINGS_ID         0xaa
+#include "preset.h"
 #define SETTINGS_VERSION    1
 #define SETTINGS_OFFSET     0x02
+#define PRESET_OFFSET       0x10
+#define PRESET_SIZE         0x10
+#define PRESET_COUNT        15
 
 enum FastLedType : uint8_t {
     FLTYPE_NONE,
@@ -50,7 +55,7 @@ typedef struct _SettingsData {
     uint8_t dmxCount;
 } SettingsData;
 
-static const SettingsData default_settings = {
+const PROGMEM SettingsData default_settings = {
     .midiChannel = MIDI_CHANNEL_OMNI,
     .midiThru = true,
     .brightness = 64,
@@ -60,9 +65,10 @@ static const SettingsData default_settings = {
 };
 
 class Settings {
-    
+
 private:
     SettingsData _data;
+    PresetData* _presets;
 
     uint8_t read_version();
     bool verify();

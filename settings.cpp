@@ -1,6 +1,13 @@
 #include "settings.h"
 
-Settings::Settings() : _data(default_settings) {
+Settings::Settings() {
+    memcpy_P(&_data, &default_settings, sizeof(SettingsData));
+    
+    _presets = new PresetData[PRESET_COUNT];
+    for (uint8_t i = 0; i < PRESET_COUNT; i++) {
+        memcpy_P(&_presets[i], &default_preset, sizeof(PresetData));
+    }
+
     if (!verify()) reset();
     read_data();
 }
@@ -40,11 +47,17 @@ bool Settings::verify() {
 bool Settings::read_data() {
     if (!verify()) return false;
     EEPROM.get(SETTINGS_OFFSET, _data);
+    for (uint8_t i = 0; i < PRESET_COUNT; i++) {
+        EEPROM.get(PRESET_OFFSET + PRESET_SIZE*i, _presets[i]);
+    }
     return true;
 }
 
 void Settings::write_data() {
     EEPROM.put(SETTINGS_OFFSET, _data);
+    for (uint8_t i = 0; i < PRESET_COUNT; i++) {
+        EEPROM.put(PRESET_OFFSET + PRESET_SIZE*i, _presets[i]);
+    }
 }
 
 void Settings::reset() {
