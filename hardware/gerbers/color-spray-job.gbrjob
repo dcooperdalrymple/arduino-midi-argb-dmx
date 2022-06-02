@@ -9,7 +9,7 @@
   },
   "GeneralSpecs": {
     "ProjectId": {
-      "Name": "arduino-midi-argb-dmx",
+      "Name": "color-spray",
       "GUID": "61726475-696e-46f2-9d6d-6964692d6172",
       "Revision": "rev?"
     },
@@ -34,57 +34,57 @@
   ],
   "FilesAttributes": [
     {
-      "Path": "arduino-midi-argb-dmx-F_Cu.gbr",
+      "Path": "color-spray-F_Cu.gbr",
       "FileFunction": "Copper,L1,Top",
       "FilePolarity": "Positive"
     },
     {
-      "Path": "arduino-midi-argb-dmx-B_Cu.gbr",
+      "Path": "color-spray-B_Cu.gbr",
       "FileFunction": "Copper,L2,Bot",
       "FilePolarity": "Positive"
     },
     {
-      "Path": "arduino-midi-argb-dmx-F_Paste.gbr",
+      "Path": "color-spray-F_Paste.gbr",
       "FileFunction": "SolderPaste,Top",
       "FilePolarity": "Positive"
     },
     {
-      "Path": "arduino-midi-argb-dmx-B_Paste.gbr",
+      "Path": "color-spray-B_Paste.gbr",
       "FileFunction": "SolderPaste,Bot",
       "FilePolarity": "Positive"
     },
     {
-      "Path": "arduino-midi-argb-dmx-F_Silkscreen.gbr",
+      "Path": "color-spray-F_Silkscreen.gbr",
       "FileFunction": "Legend,Top",
       "FilePolarity": "Positive"
     },
     {
-      "Path": "arduino-midi-argb-dmx-B_Silkscreen.gbr",
+      "Path": "color-spray-B_Silkscreen.gbr",
       "FileFunction": "Legend,Bot",
       "FilePolarity": "Positive"
     },
     {
-      "Path": "arduino-midi-argb-dmx-F_Mask.gbr",
+      "Path": "color-spray-F_Mask.gbr",
       "FileFunction": "SolderMask,Top",
       "FilePolarity": "Negative"
     },
     {
-      "Path": "arduino-midi-argb-dmx-B_Mask.gbr",
+      "Path": "color-spray-B_Mask.gbr",
       "FileFunction": "SolderMask,Bot",
       "FilePolarity": "Negative"
     },
     {
-      "Path": "arduino-midi-argb-dmx-Edge_Cuts.gbr",
+      "Path": "color-spray-Edge_Cuts.gbr",
       "FileFunction": "Profile",
       "FilePolarity": "Positive"
     },
     {
-      "Path": "arduino-midi-argb-dmx-F_Fab.gbr",
+      "Path": "color-spray-F_Fab.gbr",
       "FileFunction": "AssemblyDrawing,Top",
       "FilePolarity": "Positive"
     },
     {
-      "Path": "arduino-midi-argb-dmx-B_Fab.gbr",
+      "Path": "color-spray-B_Fab.gbr",
       "FileFunction": "AssemblyDrawing,Bot",
       "FilePolarity": "Positive"
     }

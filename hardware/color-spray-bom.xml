@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <export version="E">
   <design>
-    <source>/home/ogrecooper/repos/arduino-midi-argb-dmx/arduino-midi-argb-dmx.kicad_sch</source>
+    <source>color-spray.kicad_sch</source>
     <date>Mon 09 May 2022 02:39:10 PM CDT</date>
     <tool>Eeschema 6.0.4+dfsg-1+b1</tool>
     <sheet number="1" name="/" tstamps="/">
@@ -10,7 +10,7 @@
         <company>Cooper Dalrymple</company>
         <rev>1</rev>
         <date>2022-05-06</date>
-        <source>arduino-midi-argb-dmx.kicad_sch</source>
+        <source>color-spray.kicad_sch</source>
         <comment number="1" value="Avoid swapping DMX and ARGB connections."/>
         <comment number="2" value="XLR connector is provided for longer ARGB runs."/>
         <comment number="3" value=""/>
@@ -29,7 +29,7 @@
       <footprint>Capacitor_THT:C_Rect_L4.0mm_W2.5mm_P2.50mm</footprint>
       <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
       <property name="Sheetname" value=""/>
-      <property name="Sheetfile" value="arduino-midi-argb-dmx.kicad_sch"/>
+      <property name="Sheetfile" value="color-spray.kicad_sch"/>
       <sheetpath names="/" tstamps="/"/>
       <tstamps>e7380d8e-1b80-416a-a042-924edecf9abd</tstamps>
     </comp>
@@ -38,7 +38,7 @@
       <footprint>Capacitor_THT:CP_Axial_L20.0mm_D10.0mm_P26.00mm_Horizontal</footprint>
       <libsource lib="Device" part="C_Polarized" description="Polarized capacitor"/>
       <property name="Sheetname" value=""/>
-      <property name="Sheetfile" value="arduino-midi-argb-dmx.kicad_sch"/>
+      <property name="Sheetfile" value="color-spray.kicad_sch"/>
       <sheetpath names="/" tstamps="/"/>
       <tstamps>736ecc62-0316-4090-a7ee-3d926bb25fca</tstamps>
     </comp>
@@ -47,7 +47,7 @@
       <footprint>Capacitor_THT:CP_Radial_D5.0mm_P2.50mm</footprint>
       <libsource lib="Device" part="C_Polarized" description="Polarized capacitor"/>
       <property name="Sheetname" value=""/>
-      <property name="Sheetfile" value="arduino-midi-argb-dmx.kicad_sch"/>
+      <property name="Sheetfile" value="color-spray.kicad_sch"/>
       <sheetpath names="/" tstamps="/"/>
       <tstamps>e54e6895-a87d-4f8d-a120-006a94c12664</tstamps>
     </comp>
@@ -56,7 +56,7 @@
       <footprint>Capacitor_THT:CP_Axial_L20.0mm_D10.0mm_P26.00mm_Horizontal</footprint>
       <libsource lib="Device" part="C_Polarized" description="Polarized capacitor"/>
       <property name="Sheetname" value=""/>
-      <property name="Sheetfile" value="arduino-midi-argb-dmx.kicad_sch"/>
+      <property name="Sheetfile" value="color-spray.kicad_sch"/>
       <sheetpath names="/" tstamps="/"/>
       <tstamps>2d5d5187-7dec-482b-b32e-aa3ce3536bb8</tstamps>
     </comp>
@@ -65,7 +65,7 @@
       <footprint>Capacitor_THT:CP_Radial_D5.0mm_P2.50mm</footprint>
       <libsource lib="Device" part="C_Polarized" description="Polarized capacitor"/>
       <property name="Sheetname" value=""/>
-      <property name="Sheetfile" value="arduino-midi-argb-dmx.kicad_sch"/>
+      <property name="Sheetfile" value="color-spray.kicad_sch"/>
       <sheetpath names="/" tstamps="/"/>
       <tstamps>89227bdf-4bd1-4d33-a0d6-233ab01c82c4</tstamps>
     </comp>
@@ -74,7 +74,7 @@
       <footprint>Capacitor_THT:CP_Radial_D5.0mm_P2.50mm</footprint>
       <libsource lib="Device" part="C_Polarized" description="Polarized capacitor"/>
       <property name="Sheetname" value=""/>
-      <property name="Sheetfile" value="arduino-midi-argb-dmx.kicad_sch"/>
+      <property name="Sheetfile" value="color-spray.kicad_sch"/>
       <sheetpath names="/" tstamps="/"/>
       <tstamps>3bcf3ad9-1d55-4538-a0ba-b70abe365c60</tstamps>
     </comp>
@@ -84,7 +84,7 @@
       <datasheet>http://www.vishay.com/docs/85622/1n914.pdf</datasheet>
       <libsource lib="Diode" part="1N914" description="100V 0.3A Small Signal Fast Switching Diode, DO-35"/>
       <property name="Sheetname" value=""/>
-      <property name="Sheetfile" value="arduino-midi-argb-dmx.kicad_sch"/>
+      <property name="Sheetfile" value="color-spray.kicad_sch"/>
       <sheetpath names="/" tstamps="/"/>
       <tstamps>a89f74f1-29a0-43c0-83e3-3326529b3a64</tstamps>
     </comp>
@@ -93,7 +93,7 @@
       <footprint>MountingHole:MountingHole_3.2mm_M3_Pad</footprint>
       <libsource lib="Mechanical" part="MountingHole_Pad" description="Mounting Hole with connection"/>
       <property name="Sheetname" value=""/>
-      <property name="Sheetfile" value="arduino-midi-argb-dmx.kicad_sch"/>
+      <property name="Sheetfile" value="color-spray.kicad_sch"/>
       <sheetpath names="/" tstamps="/"/>
       <tstamps>aaad6728-1d1f-45ba-81a0-0afecd08151d</tstamps>
     </comp>
@@ -102,7 +102,7 @@
       <footprint>MountingHole:MountingHole_3.2mm_M3_Pad</footprint>
       <libsource lib="Mechanical" part="MountingHole_Pad" description="Mounting Hole with connection"/>
       <property name="Sheetname" value=""/>
-      <property name="Sheetfile" value="arduino-midi-argb-dmx.kicad_sch"/>
+      <property name="Sheetfile" value="color-spray.kicad_sch"/>
       <sheetpath names="/" tstamps="/"/>
       <tstamps>43185b98-6516-42d7-9a24-61eed4262165</tstamps>
     </comp>
@@ -111,7 +111,7 @@
       <footprint>MountingHole:MountingHole_3.2mm_M3_Pad</footprint>
       <libsource lib="Mechanical" part="MountingHole_Pad" description="Mounting Hole with connection"/>
       <property name="Sheetname" value=""/>
-      <property name="Sheetfile" value="arduino-midi-argb-dmx.kicad_sch"/>
+      <property name="Sheetfile" value="color-spray.kicad_sch"/>
       <sheetpath names="/" tstamps="/"/>
       <tstamps>7c7813b4-071a-477e-a3e0-06832ed9a76b</tstamps>
     </comp>
@@ -120,7 +120,7 @@
       <footprint>MountingHole:MountingHole_3.2mm_M3_Pad</footprint>
       <libsource lib="Mechanical" part="MountingHole_Pad" description="Mounting Hole with connection"/>
       <property name="Sheetname" value=""/>
-      <property name="Sheetfile" value="arduino-midi-argb-dmx.kicad_sch"/>
+      <property name="Sheetfile" value="color-spray.kicad_sch"/>
       <sheetpath names="/" tstamps="/"/>
       <tstamps>94e74242-3a2f-4cc7-9d38-5b728c5cb79b</tstamps>
     </comp>
@@ -130,7 +130,7 @@
       <datasheet>http://www.mouser.com/ds/2/18/40_c091_abd_e-75918.pdf</datasheet>
       <libsource lib="Connector" part="DIN-5_180degree" description="5-pin DIN connector (5-pin DIN-5 stereo)"/>
       <property name="Sheetname" value=""/>
-      <property name="Sheetfile" value="arduino-midi-argb-dmx.kicad_sch"/>
+      <property name="Sheetfile" value="color-spray.kicad_sch"/>
       <sheetpath names="/" tstamps="/"/>
       <tstamps>346735cf-3f08-40d5-b3c9-727b5f59adad</tstamps>
     </comp>
@@ -140,7 +140,7 @@
       <datasheet> ~</datasheet>
       <libsource lib="Connector" part="XLR3_Ground" description="XLR Connector, Male or Female, 3 Pins, Discrete Ground Pin"/>
       <property name="Sheetname" value=""/>
-      <property name="Sheetfile" value="arduino-midi-argb-dmx.kicad_sch"/>
+      <property name="Sheetfile" value="color-spray.kicad_sch"/>
       <sheetpath names="/" tstamps="/"/>
       <tstamps>6ee9f43b-6c8a-4f14-a066-a9e850a3ae9b</tstamps>
     </comp>
@@ -149,7 +149,7 @@
       <footprint>Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Horizontal</footprint>
       <libsource lib="Connector" part="Conn_01x04_Male" description="Generic connector, single row, 01x04, script generated (kicad-library-utils/schlib/autogen/connector/)"/>
       <property name="Sheetname" value=""/>
-      <property name="Sheetfile" value="arduino-midi-argb-dmx.kicad_sch"/>
+      <property name="Sheetfile" value="color-spray.kicad_sch"/>
       <sheetpath names="/" tstamps="/"/>
       <tstamps>545b8bf5-6bd7-41c2-8ee0-b97b649cee8c</tstamps>
     </comp>
@@ -159,7 +159,7 @@
       <datasheet> ~</datasheet>
       <libsource lib="Connector" part="XLR3_Ground" description="XLR Connector, Male or Female, 3 Pins, Discrete Ground Pin"/>
       <property name="Sheetname" value=""/>
-      <property name="Sheetfile" value="arduino-midi-argb-dmx.kicad_sch"/>
+      <property name="Sheetfile" value="color-spray.kicad_sch"/>
       <sheetpath names="/" tstamps="/"/>
       <tstamps>07a52671-26cb-4fe9-a841-65bf708fabb8</tstamps>
     </comp>
@@ -168,7 +168,7 @@
       <footprint>Connector_BarrelJack:BarrelJack_Horizontal</footprint>
       <libsource lib="Connector" part="Barrel_Jack" description="DC Barrel Jack"/>
       <property name="Sheetname" value=""/>
-      <property name="Sheetfile" value="arduino-midi-argb-dmx.kicad_sch"/>
+      <property name="Sheetfile" value="color-spray.kicad_sch"/>
       <sheetpath names="/" tstamps="/"/>
       <tstamps>1a4af53f-82cd-4374-86ca-e3900a91dfb9</tstamps>
     </comp>
@@ -177,7 +177,7 @@
       <footprint>Connector_PinHeader_2.54mm:PinHeader_1x05_P2.54mm_Horizontal</footprint>
       <libsource lib="Connector" part="Conn_01x05_Male" description="Generic connector, single row, 01x05, script generated (kicad-library-utils/schlib/autogen/connector/)"/>
       <property name="Sheetname" value=""/>
-      <property name="Sheetfile" value="arduino-midi-argb-dmx.kicad_sch"/>
+      <property name="Sheetfile" value="color-spray.kicad_sch"/>
       <sheetpath names="/" tstamps="/"/>
       <tstamps>b9a616d4-042f-40dd-b821-3bd00708dff1</tstamps>
     </comp>
@@ -186,7 +186,7 @@
       <footprint>Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical</footprint>
       <libsource lib="Jumper" part="Jumper_2_Open" description="Jumper, 2-pole, open"/>
       <property name="Sheetname" value=""/>
-      <property name="Sheetfile" value="arduino-midi-argb-dmx.kicad_sch"/>
+      <property name="Sheetfile" value="color-spray.kicad_sch"/>
       <sheetpath names="/" tstamps="/"/>
       <tstamps>31ad19c0-857b-40f6-b438-c63361d7a7ac</tstamps>
     </comp>
@@ -196,7 +196,7 @@
       <datasheet>http://www.infineon.com/dgdl/irlb8721pbf.pdf?fileId=5546d462533600a40153566056732591</datasheet>
       <libsource lib="Transistor_FET" part="IRLB8721PBF" description="62A Id, 30V Vds, 8.7 mOhm Rds, N-Channel HEXFET Power MOSFET, TO-220"/>
       <property name="Sheetname" value=""/>
-      <property name="Sheetfile" value="arduino-midi-argb-dmx.kicad_sch"/>
+      <property name="Sheetfile" value="color-spray.kicad_sch"/>
       <sheetpath names="/" tstamps="/"/>
       <tstamps>460c128c-e54f-4241-8aae-43783bf9da6f</tstamps>
     </comp>
@@ -206,7 +206,7 @@
       <datasheet>http://www.infineon.com/dgdl/irlb8721pbf.pdf?fileId=5546d462533600a40153566056732591</datasheet>
       <libsource lib="Transistor_FET" part="IRLB8721PBF" description="62A Id, 30V Vds, 8.7 mOhm Rds, N-Channel HEXFET Power MOSFET, TO-220"/>
       <property name="Sheetname" value=""/>
-      <property name="Sheetfile" value="arduino-midi-argb-dmx.kicad_sch"/>
+      <property name="Sheetfile" value="color-spray.kicad_sch"/>
       <sheetpath names="/" tstamps="/"/>
       <tstamps>20f5d85e-1a1e-428d-9301-0b7073950b3c</tstamps>
     </comp>
@@ -216,7 +216,7 @@
       <datasheet>http://www.infineon.com/dgdl/irlb8721pbf.pdf?fileId=5546d462533600a40153566056732591</datasheet>
       <libsource lib="Transistor_FET" part="IRLB8721PBF" description="62A Id, 30V Vds, 8.7 mOhm Rds, N-Channel HEXFET Power MOSFET, TO-220"/>
       <property name="Sheetname" value=""/>
-      <property name="Sheetfile" value="arduino-midi-argb-dmx.kicad_sch"/>
+      <property name="Sheetfile" value="color-spray.kicad_sch"/>
       <sheetpath names="/" tstamps="/"/>
       <tstamps>06eb3f00-beea-46db-9e61-fb4665a862d1</tstamps>
     </comp>
@@ -226,7 +226,7 @@
       <datasheet>http://www.infineon.com/dgdl/irlb8721pbf.pdf?fileId=5546d462533600a40153566056732591</datasheet>
       <libsource lib="Transistor_FET" part="IRLB8721PBF" description="62A Id, 30V Vds, 8.7 mOhm Rds, N-Channel HEXFET Power MOSFET, TO-220"/>
       <property name="Sheetname" value=""/>
-      <property name="Sheetfile" value="arduino-midi-argb-dmx.kicad_sch"/>
+      <property name="Sheetfile" value="color-spray.kicad_sch"/>
       <sheetpath names="/" tstamps="/"/>
       <tstamps>a4c776c2-b05d-4aea-b2dd-4c3fc3be26c7</tstamps>
     </comp>
@@ -235,7 +235,7 @@
       <footprint>Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal</footprint>
       <libsource lib="Device" part="R" description="Resistor"/>
       <property name="Sheetname" value=""/>
-      <property name="Sheetfile" value="arduino-midi-argb-dmx.kicad_sch"/>
+      <property name="Sheetfile" value="color-spray.kicad_sch"/>
       <sheetpath names="/" tstamps="/"/>
       <tstamps>33ca9892-322b-4810-8f72-92b0855f8ed8</tstamps>
     </comp>
@@ -244,7 +244,7 @@
       <footprint>Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal</footprint>
       <libsource lib="Device" part="R" description="Resistor"/>
       <property name="Sheetname" value=""/>
-      <property name="Sheetfile" value="arduino-midi-argb-dmx.kicad_sch"/>
+      <property name="Sheetfile" value="color-spray.kicad_sch"/>
       <sheetpath names="/" tstamps="/"/>
       <tstamps>89dd16e2-a066-4616-a133-adf76812e7ce</tstamps>
     </comp>
@@ -253,7 +253,7 @@
       <footprint>Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal</footprint>
       <libsource lib="Device" part="R" description="Resistor"/>
       <property name="Sheetname" value=""/>
-      <property name="Sheetfile" value="arduino-midi-argb-dmx.kicad_sch"/>
+      <property name="Sheetfile" value="color-spray.kicad_sch"/>
       <sheetpath names="/" tstamps="/"/>
       <tstamps>e873697e-1e2d-4960-857e-a6ba3f4af543</tstamps>
     </comp>
@@ -262,7 +262,7 @@
       <footprint>Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal</footprint>
       <libsource lib="Device" part="R" description="Resistor"/>
       <property name="Sheetname" value=""/>
-      <property name="Sheetfile" value="arduino-midi-argb-dmx.kicad_sch"/>
+      <property name="Sheetfile" value="color-spray.kicad_sch"/>
       <sheetpath names="/" tstamps="/"/>
       <tstamps>0e8e739a-22ce-4900-a5f8-718c94c1271d</tstamps>
     </comp>
@@ -271,7 +271,7 @@
       <footprint>Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal</footprint>
       <libsource lib="Device" part="R" description="Resistor"/>
       <property name="Sheetname" value=""/>
-      <property name="Sheetfile" value="arduino-midi-argb-dmx.kicad_sch"/>
+      <property name="Sheetfile" value="color-spray.kicad_sch"/>
       <sheetpath names="/" tstamps="/"/>
       <tstamps>53390ed0-5012-4672-a024-1ef29bb832ca</tstamps>
     </comp>
@@ -280,7 +280,7 @@
       <footprint>Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal</footprint>
       <libsource lib="Device" part="R" description="Resistor"/>
       <property name="Sheetname" value=""/>
-      <property name="Sheetfile" value="arduino-midi-argb-dmx.kicad_sch"/>
+      <property name="Sheetfile" value="color-spray.kicad_sch"/>
       <sheetpath names="/" tstamps="/"/>
       <tstamps>f65cb451-e542-4887-96f3-daff82222590</tstamps>
     </comp>
@@ -289,7 +289,7 @@
       <footprint>Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal</footprint>
       <libsource lib="Device" part="R" description="Resistor"/>
       <property name="Sheetname" value=""/>
-      <property name="Sheetfile" value="arduino-midi-argb-dmx.kicad_sch"/>
+      <property name="Sheetfile" value="color-spray.kicad_sch"/>
       <sheetpath names="/" tstamps="/"/>
       <tstamps>214497e1-a58f-41c6-8266-efc302bd7111</tstamps>
     </comp>
@@ -298,7 +298,7 @@
       <footprint>Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal</footprint>
       <libsource lib="Device" part="R" description="Resistor"/>
       <property name="Sheetname" value=""/>
-      <property name="Sheetfile" value="arduino-midi-argb-dmx.kicad_sch"/>
+      <property name="Sheetfile" value="color-spray.kicad_sch"/>
       <sheetpath names="/" tstamps="/"/>
       <tstamps>9ad1d436-a55e-4179-9894-6feaad58967a</tstamps>
     </comp>
@@ -307,7 +307,7 @@
       <footprint>Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal</footprint>
       <libsource lib="Device" part="R" description="Resistor"/>
       <property name="Sheetname" value=""/>
-      <property name="Sheetfile" value="arduino-midi-argb-dmx.kicad_sch"/>
+      <property name="Sheetfile" value="color-spray.kicad_sch"/>
       <sheetpath names="/" tstamps="/"/>
       <tstamps>3e9eb5dc-aa41-4d48-bb05-eeb5e6d9d21d</tstamps>
     </comp>
@@ -316,7 +316,7 @@
       <footprint>itsybitsy-32u4-5v:ItsyBitsy_32u4</footprint>
       <libsource lib="ItsyBitsy 32u4 5V" part="ItsyBitsy-32u4-5V" description=""/>
       <property name="Sheetname" value=""/>
-      <property name="Sheetfile" value="arduino-midi-argb-dmx.kicad_sch"/>
+      <property name="Sheetfile" value="color-spray.kicad_sch"/>
       <sheetpath names="/" tstamps="/"/>
       <tstamps>addffef0-783b-41da-923c-d19f8ac51183</tstamps>
     </comp>
@@ -326,7 +326,7 @@
       <datasheet>http://www.onsemi.com/pub/Collateral/HCPL2731-D.pdf</datasheet>
       <libsource lib="Isolator" part="6N138" description="Low Input Current high Gain Split Darlington Optocouplers, -0.5V to 7V VDD, DIP-8"/>
       <property name="Sheetname" value=""/>
-      <property name="Sheetfile" value="arduino-midi-argb-dmx.kicad_sch"/>
+      <property name="Sheetfile" value="color-spray.kicad_sch"/>
       <sheetpath names="/" tstamps="/"/>
       <tstamps>99ce8552-65fe-4d65-9ad8-0eb6c07fb49d</tstamps>
     </comp>
@@ -336,7 +336,7 @@
       <datasheet>http://www.ti.com/lit/ds/symlink/sn75176a.pdf</datasheet>
       <libsource lib="Interface_UART" part="SN75176AP" description="Differential RS-422/RS-485 bus transceiver, DIP-8"/>
       <property name="Sheetname" value=""/>
-      <property name="Sheetfile" value="arduino-midi-argb-dmx.kicad_sch"/>
+      <property name="Sheetfile" value="color-spray.kicad_sch"/>
       <sheetpath names="/" tstamps="/"/>
       <tstamps>341ca8c7-b10e-443b-bf59-bebb94e9077f</tstamps>
     </comp>
@@ -652,7 +652,7 @@
       <uri>/usr/share/kicad/symbols//Isolator.kicad_sym</uri>
     </library>
     <library logical="ItsyBitsy 32u4 5V">
-      <uri>/home/ogrecooper/repos/arduino-midi-argb-dmx/itsybitsy-32u4-5v.lib</uri>
+      <uri>itsybitsy-32u4-5v.lib</uri>
     </library>
     <library logical="Jumper">
       <uri>/usr/share/kicad/symbols//Jumper.kicad_sym</uri>
