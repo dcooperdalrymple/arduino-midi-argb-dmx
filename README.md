@@ -65,7 +65,7 @@ There are 8 palettes available all contributed by the _FastLED_ library. Custom 
 | 6     | 96-111        | Party          |
 | 7     | 112-127       | Heat           |
 
-## IDE Plugins
+## DAW Plugins
 
 > The only plugin provided for improved control and synchronization of this device is written for REAPER. The specifications are all provided for extending support to other platforms, but that is not planned currently.
 
