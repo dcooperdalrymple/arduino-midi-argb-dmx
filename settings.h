@@ -6,12 +6,10 @@
 #include <MIDI.h>
 #include <FastLED.h>
 
+#include "sysex.h"
 #include "preset.h"
 
-#define MANUFACTURER_ID     0xcd
-#define DEVICE_ID           0xc5
 #define SETTINGS_VERSION    1
-
 #define SETTINGS_OFFSET     0x03
 #define PRESET_OFFSET       0x10
 #define PRESET_SIZE         0x10
@@ -56,6 +54,7 @@ typedef struct _SettingsData {
     uint8_t argbCount;
     FastLedType argbType;
     uint8_t dmxCount;
+    uint8_t preset;
 } SettingsData;
 
 const PROGMEM SettingsData default_settings = {
@@ -64,7 +63,8 @@ const PROGMEM SettingsData default_settings = {
     .brightness = 64,
     .argbCount = 12,
     .argbType = FLTYPE_WS2812B,
-    .dmxCount = 3
+    .dmxCount = 3,
+    .preset = 0
 };
 
 class Settings {
@@ -76,6 +76,8 @@ private:
     uint8_t read_version();
     bool verify();
     bool read_data();
+    void write_settings();
+    void write_preset(uint8_t i);
     void write_data();
     void reset();
 
@@ -92,7 +94,16 @@ public:
 
     uint8_t getDmxCount();
 
+    uint8_t getPreset();
+    PresetData* getPresetData(uint8_t i);
+
     bool handleSysex(byte* data, unsigned size);
+
+    void datacpy(void * destination);
+    void presetcpy(void * destination, uint8_t i, bool adjust = false);
+
+    void datawrite(void * source);
+    void presetwrite(void * source, uint8_t i, bool adjust = false);
 
 };
 

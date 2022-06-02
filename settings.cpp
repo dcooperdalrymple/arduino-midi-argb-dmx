@@ -2,7 +2,7 @@
 
 Settings::Settings() {
     memcpy_P(&_data, &default_settings, sizeof(SettingsData));
-    
+
     _presets = new PresetData[PRESET_COUNT];
     for (uint8_t i = 0; i < PRESET_COUNT; i++) {
         memcpy_P(&_presets[i], &default_preset, sizeof(PresetData));
@@ -34,6 +34,15 @@ uint8_t Settings::getDmxCount() {
     return _data.dmxCount;
 }
 
+uint8_t Settings::getPreset() {
+    if (_data.preset >= PRESET_COUNT) return 0;
+    return _data.preset;
+}
+PresetData* Settings::getPresetData(uint8_t i) {
+    if (i >= PRESET_COUNT) i = 0;
+    return &_presets[i];
+}
+
 uint8_t Settings::read_version() {
     if (EEPROM.read(0x00) != MANUFACTURER_ID) return 0;
     if (EEPROM.read(0x01) != DEVICE_ID) return 0;
@@ -54,10 +63,16 @@ bool Settings::read_data() {
     return true;
 }
 
-void Settings::write_data() {
+void Settings::write_settings() {
     EEPROM.put(SETTINGS_OFFSET, _data);
+}
+void Settings::write_preset(uint8_t i) {
+    EEPROM.put(PRESET_OFFSET + PRESET_SIZE*i, _presets[i]);
+}
+void Settings::write_data() {
+    write_settings();
     for (uint8_t i = 0; i < PRESET_COUNT; i++) {
-        EEPROM.put(PRESET_OFFSET + PRESET_SIZE*i, _presets[i]);
+        write_preset(i);
     }
 }
 
@@ -75,17 +90,37 @@ void Settings::reset() {
     write_data();
 }
 
-bool Settings::handleSysex(byte* data, unsigned size) {
-    if (size != 256) return false;
-
-    if (data[0x00] != MANUFACTURER_ID) return false;
-    if (data[0x01] != DEVICE_ID) return false;
-    if (data[0x02] != SETTINGS_VERSION) return false;
-
-    for (unsigned i = 0; i < size; i++) {
-        EEPROM.write(i, data[i]);
+void Settings::datacpy(void * destination) {
+    memcpy(destination, &_data, sizeof(SettingsData));
+}
+void Settings::presetcpy(void * destination, uint8_t i, bool adjust = false) {
+    if (i >= PRESET_COUNT) return;
+    memcpy(destination, &_presets[i], sizeof(PresetData));
+    if (adjust) {
+        PresetData *ptr = reinterpret_cast<PresetData *>(destination);
+        ptr->color_rgb.r /= 2;
+        ptr->color_rgb.g /= 2;
+        ptr->color_rgb.b /= 2;
+        ptr->color_hsv.h /= 2;
+        ptr->color_hsv.s /= 2;
+        ptr->color_hsv.v /= 2;
     }
+}
 
-    read_data();
-    return true;
+void Settings::datawrite(void * source) {
+    memcpy(&_data, source, sizeof(SettingsData));
+    write_settings();
+}
+void Settings::presetwrite(void * source, uint8_t i, bool adjust = false) {
+    if (i >= PRESET_COUNT) return;
+    memcpy(&_presets[i], source, sizeof(PresetData));
+    if (adjust) {
+        _presets[i].color_rgb.r *= 2;
+        _presets[i].color_rgb.g *= 2;
+        _presets[i].color_rgb.b *= 2;
+        _presets[i].color_hsv.h *= 2;
+        _presets[i].color_hsv.s *= 2;
+        _presets[i].color_hsv.v *= 2;
+    }
+    write_preset(i);
 }

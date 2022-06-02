@@ -1,5 +1,5 @@
 /**
- * Title:       Arduino MIDI ARGB DMX
+ * Title:       Color Spray
  * Created by:  Cooper Dalrymple
  * Date:        2022-05-06
  * License:     GNU GPL v3.0
@@ -14,23 +14,26 @@
 #else
 #include <MIDI.h>
 #endif
+USING_NAMESPACE_MIDI;
 
 struct CustomMidiSettings : public MIDI_NAMESPACE::DefaultSettings {
-    static const unsigned SysExMaxSize = 256;
-    static const unsigned BaudRate = 31250;
+    static const unsigned SysExMaxSize = 32;
 };
-#define MidiType MIDI_NAMESPACE::MidiType
+typedef Message<CustomMidiSettings::SysExMaxSize> MidiMessage;
+typedef MIDI_NAMESPACE::MidiType MidiType;
 
-#define SerialMidiMessage MIDI_NAMESPACE::MidiInterface<MIDI_NAMESPACE::SerialMIDI<HardwareSerial>, CustomMidiSettings>::MidiMessage
-MIDI_CREATE_CUSTOM_INSTANCE(HardwareSerial, Serial1, MIDICoreSerial, CustomMidiSettings);
 #if USB_MIDI
 #define UsbMidiMessage MIDI_NAMESPACE::MidiInterface<USBMIDI_NAMESPACE::usbMidiTransport, CustomMidiSettings>::MidiMessage
 USBMIDI_CREATE_CUSTOM_INSTANCE(0, MIDICoreUSB, CustomMidiSettings);
 #endif
 
+#define SerialMidiMessage MIDI_NAMESPACE::MidiInterface<MIDI_NAMESPACE::SerialMIDI<HardwareSerial>, CustomMidiSettings>::MidiMessage
+MIDI_CREATE_CUSTOM_INSTANCE(HardwareSerial, Serial1, MIDICoreSerial, CustomMidiSettings);
+
 #include <DmxSimple.h>
 #include <FastLED.h>
 
+#include "sysex.h"
 #include "color.h"
 #include "palettes.h"
 #include "preset.h"
@@ -63,15 +66,16 @@ TBlendType blending = LINEARBLEND;
 
 Settings settings;
 
+void loadPreset(uint8_t i);
+
 #if USB_MIDI
-void messageUartToUsb(SerialMidiMessage message);
-void messageUsbToUart(UsbMidiMessage message);
+void messageUartToUsb(MidiMessage message);
+void messageUsbToUart(MidiMessage message);
 #endif
 void controlChange(byte channel, byte control, byte value);
 void programChange(byte channel, byte program);
 
 void setup() {
-
     pinMode(LED, OUTPUT);
     digitalWrite(LED, HIGH);
 
@@ -81,7 +85,7 @@ void setup() {
     unsigned long usb_start = millis();
     while (!Serial && millis() - usb_start < USB_TIMEOUT) { }
     if (Serial) {
-        Serial.println("Arduino MIDI ARGB DMX - Version 1.0 - 2022 Cooper Dalrymple");
+        Serial.println("Color Spray - Version 1.0 - 2022 Cooper Dalrymple");
 
         Serial.print("Midi Thru: ");
         if (settings.getMidiThru()) {
@@ -113,14 +117,20 @@ void setup() {
     #endif
     MIDICoreSerial.setHandleControlChange(controlChange);
     MIDICoreSerial.setHandleProgramChange(programChange);
+    MIDICoreSerial.setHandleNoteOn(noteOn);
     MIDICoreSerial.setHandleSystemExclusive(systemExclusive);
-    MIDICoreSerial.begin(MIDI_CHANNEL_OMNI);
 
     #if USB_MIDI
+    MIDICoreUSB.turnThruOff();
     MIDICoreUSB.setHandleMessage(messageUsbToUart);
     MIDICoreUSB.setHandleControlChange(controlChange);
     MIDICoreUSB.setHandleProgramChange(programChange);
+    MIDICoreUSB.setHandleNoteOn(noteOn);
     MIDICoreUSB.setHandleSystemExclusive(systemExclusive);
+    #endif
+
+    MIDICoreSerial.begin(MIDI_CHANNEL_OMNI);
+    #if USB_MIDI
     MIDICoreUSB.begin(MIDI_CHANNEL_OMNI);
     #endif
 
@@ -199,7 +209,7 @@ void setup() {
             //FastLED.addLeds<GE8822, ARGB_PIN, ARGB_ORDER>(argbLights, settings.getArgbCount()).setCorrection(TypicalLEDStrip);
             break;
         case FLTYPE_GW6205:
-            FastLED.addLeds<GW6205, ARGB_PIN, ARGB_ORDER>(argbLights, settings.getArgbCount()).setCorrection(TypicalLEDStrip);
+            //FastLED.addLeds<GW6205, ARGB_PIN, ARGB_ORDER>(argbLights, settings.getArgbCount()).setCorrection(TypicalLEDStrip);
             break;
         case FLTYPE_GW6205_400:
             //FastLED.addLeds<GW6205_400, ARGB_PIN, ARGB_ORDER>(argbLights, settings.getArgbCount()).setCorrection(TypicalLEDStrip);
@@ -208,7 +218,7 @@ void setup() {
             //FastLED.addLeds<LPD1886, ARGB_PIN, ARGB_ORDER>(argbLights, settings.getArgbCount()).setCorrection(TypicalLEDStrip);
             break;
         case FLTYPE_LPD1886_8BIT:
-            //FastLED.addLeds<LPD1886_8BIT, ARGB_PIN, ARGB_ORDER>(argbLights, settings.getArgbCount()).setCorrection(TypicalLEDStrip);
+            FastLED.addLeds<LPD1886_8BIT, ARGB_PIN, ARGB_ORDER>(argbLights, settings.getArgbCount()).setCorrection(TypicalLEDStrip);
             break;
         case FLTYPE_NONE:
         default:
@@ -229,8 +239,11 @@ void setup() {
     pinMode(RGB_W, OUTPUT);
     analogWrite(RGB_W, 0);
 
-    digitalWrite(LED, LOW); // Indicate that initialization is complete
+    if (settings.getPreset() > 0) {
+        loadPreset(settings.getPreset() - 1);
+    }
 
+    digitalWrite(LED, LOW); // Indicate that initialization is complete
 }
 
 CRGBPalette16 target_palette(CRGB::Black);
@@ -241,37 +254,17 @@ float palette_pos = 0;
 unsigned long led_millis = -1;
 
 #if USB_MIDI
-void messageUartToUsb(SerialMidiMessage message) {
-    UsbMidiMessage usbMessage;
-    usbMessage.channel = message.channel;
-    usbMessage.type = message.type;
-    usbMessage.data1 = message.data1;
-    usbMessage.data2 = message.data2;
-    if (message.type == MidiType::SystemExclusive) {
-        memcpy(usbMessage.sysexArray, message.sysexArray, message.sSysExMaxSize & sizeof(MIDI_NAMESPACE::DataByte));
-    }
-    usbMessage.valid = message.valid;
-    usbMessage.length = message.length;
-    MIDICoreUSB.send(usbMessage);
+void messageUartToUsb(MidiMessage message) {
+    MIDICoreUSB.send(message);
 }
-void messageUsbToUart(UsbMidiMessage message) {
-    SerialMidiMessage serialMessage;
-    serialMessage.channel = message.channel;
-    serialMessage.type = message.type;
-    serialMessage.data1 = message.data1;
-    serialMessage.data2 = message.data2;
-    if (message.type == MidiType::SystemExclusive) {
-        memcpy(serialMessage.sysexArray, message.sysexArray, message.sSysExMaxSize & sizeof(MIDI_NAMESPACE::DataByte));
-    }
-    serialMessage.valid = message.valid;
-    serialMessage.length = message.length;
-    MIDICoreSerial.send(serialMessage);
+void messageUsbToUart(MidiMessage message) {
+    MIDICoreSerial.send(message);
 }
 #endif
 
 void loop() {
     EVERY_N_MILLISECONDS(COLOR_UPDATE) {
-        palette_pos += current_preset.palette_speed;
+        palette_pos += current_preset.palette_speed / 32.0f;
         if (palette_pos >= 256.0f) palette_pos -= 256.0f;
         palette_index = (uint8_t)palette_pos;
 
@@ -351,6 +344,11 @@ void updatePalette() {
     }
 }
 
+void loadPreset(uint8_t i) {
+    settings.presetcpy(&current_preset, i);
+    updatePalette();
+}
+
 // Midi Events
 
 bool updated = false;
@@ -367,7 +365,7 @@ void controlChange(byte channel, byte control, byte value) {
             updated = true;
             break;
         case 13:
-            current_preset.palette_speed = (float)value / 32.0f;
+            current_preset.palette_speed = value;
             updated = true;
             break;
 
@@ -417,22 +415,109 @@ void programChange(byte channel, byte program) {
     }
 }
 
-#define SYSEX_SUCCESS   0x70
-#define SYSEX_ERROR     0x71
-void systemExclusive(byte* data, unsigned size) {
-    digitalWrite(LED, HIGH);
-    byte* sysexResponse = new byte[3];
-    sysexResponse[0] = MANUFACTURER_ID;
-    sysexResponse[1] = DEVICE_ID;
-    if (!settings.handleSysex(data, size)) {
-        sysexResponse[2] = SYSEX_ERROR;
-    } else {
-        sysexResponse[2] = SYSEX_SUCCESS;
+void noteOn(byte channel, byte note, byte velocity) {
+    if (settings.getMidiChannel() > 0 && channel != settings.getMidiChannel() - 1) return;
+    if (velocity == 0) return;
+
+    for (uint8_t i = 0; i < PRESET_COUNT; i++) {
+        if (settings.getPresetData(i)->note == note) {
+            triggerLed();
+            loadPreset(i);
+            break;
+        }
     }
-    MIDICoreSerial.sendSysEx(3, sysexResponse);
+}
+
+void systemExclusive(byte* data, unsigned size) {
+    bool valid = size >= 5 && data[1] == MANUFACTURER_ID && data[2] == DEVICE_ID;
+
     #if USB_MIDI
-    MIDICoreUSB.sendSysEx(3, sysexResponse);
+    #else
+    if (Serial) {
+        Serial.print("Sysex Message Received (");
+        Serial.print(size);
+        Serial.println(" bytes in total):");
+        if (valid) {
+            Serial.println("Message is Valid");
+        } else {
+            Serial.println("Invalid Message");
+        }
+        Serial.println("Message Contents:");
+        for (uint8_t i = 0; i < size; i++) {
+            Serial.print("0x");
+            Serial.print(data[i], HEX);
+            Serial.print(" ");
+            if ((i > 0 && i % 8 == 0) || i == size - 1) {
+                Serial.println();
+            }
+        }
+        Serial.println();
+    }
     #endif
-    delete sysexResponse;
-    digitalWrite(LED, LOW);
+
+    if (!valid) return;
+    triggerLed();
+
+    unsigned response_size = 3;
+    byte* response = new byte[response_size];
+    response[0x00] = MANUFACTURER_ID;
+    response[0x01] = DEVICE_ID;
+    response[0x02] = RESPONSE_ERROR;
+
+    switch (data[0x03]) {
+        case COMMAND_ALIVE:
+            response[0x02] = RESPONSE_SUCCESS;
+            break;
+
+        case COMMAND_READ_VERSION:
+            delete response;
+            response_size = 4;
+            response = new byte[response_size];
+            response[0x00] = MANUFACTURER_ID;
+            response[0x01] = DEVICE_ID;
+            response[0x02] = RESPONSE_SUCCESS;
+            response[0x03] = SETTINGS_VERSION;
+            break;
+        case COMMAND_READ_SETTINGS:
+            delete response;
+            response_size = 4 + sizeof(SettingsData);
+            response = new byte[response_size];
+            response[0x00] = MANUFACTURER_ID;
+            response[0x01] = DEVICE_ID;
+            response[0x02] = RESPONSE_SUCCESS;
+            response[0x03] = SETTINGS_VERSION;
+            settings.datacpy(response+4);
+            break;
+        case COMMAND_READ_PRESET:
+            if (size >= 5 && data[0x04] < PRESET_COUNT) {
+                delete response;
+                response_size = 4 + sizeof(PresetData);
+                response = new byte[response_size];
+                response[0x00] = MANUFACTURER_ID;
+                response[0x01] = DEVICE_ID;
+                response[0x02] = RESPONSE_SUCCESS;
+                response[0x03] = SETTINGS_VERSION;
+                settings.presetcpy(response+4, data[0x04], true);
+            }
+            break;
+
+        case COMMAND_WRITE_SETTINGS:
+            if (size == 5 + sizeof(SettingsData) + 1 && data[0x04] == SETTINGS_VERSION) {
+                settings.datawrite(data+5);
+                response[0x02] = RESPONSE_SUCCESS;
+            }
+            break;
+        case COMMAND_WRITE_PRESET:
+            if (size == 6 + sizeof(PresetData) + 1 && data[0x04] == SETTINGS_VERSION && data[0x05] < PRESET_COUNT) {
+                settings.presetwrite(data+6, data[0x05], true);
+                response[0x02] = RESPONSE_SUCCESS;
+            }
+            break;
+    }
+
+    MIDICoreSerial.sendSysEx(response_size, response);
+    #if USB_MIDI
+    MIDICoreUSB.sendSysEx(response_size, response);
+    #endif
+    delete response;
 }
