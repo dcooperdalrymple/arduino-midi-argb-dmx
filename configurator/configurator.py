@@ -712,15 +712,23 @@ progressbar.stop()
 
 mainmenu = Menu(frame)
 
-portmenu = Menu(mainmenu, tearoff = 0)
-update_portmenu()
-mainmenu.add_cascade(label = "Port", menu = portmenu)
+filemenu = Menu(mainmenu, tearoff = 0)
+filemenu.add_command(label = "Save", command = save)
+filemenu.add_command(label = "Load", command = load)
+filemenu.add_command(label = "Exit", command = root.destroy)
+mainmenu.add_cascade(label = "File", menu = filemenu)
 
-mainmenu.add_command(label = "Save", command = save)
-mainmenu.add_command(label = "Load", command = load)
-mainmenu.add_command(label = "Read", command = read)
-mainmenu.add_command(label = "Write", command = write)
-mainmenu.add_command(label = "Exit", command = root.destroy)
+devicemenu = Menu(mainmenu, tearoff = 0)
+portmenu = Menu(devicemenu, tearoff = 0)
+def update_portmenu(event=0):
+    portmenu.add_radiobutton(variable = midi_portnum, command = sysex_disconnect, label = "None", value = -1)
+    for i in range(0, sysex.get_port_count()):
+        portmenu.add_radiobutton(variable = midi_portnum, command = sysex_connect, label = sysex.get_port_name(i), value = i)
+update_portmenu()
+devicemenu.add_cascade(label = "Port", menu = portmenu)
+devicemenu.add_command(label = "Read", command = read)
+devicemenu.add_command(label = "Write", command = write)
+mainmenu.add_cascade(label = "Device", menu = devicemenu)
 
 mainmenu.bind("<<MenuSelect>>", update_portmenu);
 
