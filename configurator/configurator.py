@@ -23,8 +23,7 @@ if os.name == 'nt':
 elif os.name == 'posix':
     root.iconbitmap(bitmap="@{}/icon.xbm".format(os.path.dirname(__file__)))
 root.geometry("640x320")
-frame = Frame(root)
-frame.pack()
+root.minsize(360, 320)
 
 sysex = ColorSpraySysex()
 
@@ -32,22 +31,24 @@ midi_portnum = IntVar(root, -1, name = "Midi Port")
 def sysex_connect():
     if midi_portnum.get() < 0 or midi_portnum.get() >= sysex.get_port_count():
         midi_portnum.set(-1)
+        progresstext.configure(text="Invalid port selected for midi connection.")
         messagebox.showerror("Unable to Connect", "Invalid port number.")
         return False
     if not sysex.connect(midi_portnum.get()):
         midi_portnum.set(-1)
+        progresstext.configure(text="Unable to connect to midi port, \"{}\".".format(sysex.get_port_name(midi_portnum.get())))
         messagebox.showerror("Unable to Connect", "Unable to connect to midi port for unknown reason.")
         return False
+    progresstext.configure(text="Successfully connected to midi port, \"{}\".".format(sysex.get_port_name(midi_portnum.get())))
     return True
 def sysex_disconnect():
     if not sysex.is_connected():
+        midi_portnum.set(-1)
         return False
+    progresstext.configure(text="Disconnected from midi port, {}.".format(sysex.get_port_name(midi_portnum.get())))
     sysex.disconnect()
+    midi_portnum.set(-1)
     return True
-def update_portmenu(event=0):
-    portmenu.add_radiobutton(variable = midi_portnum, command = sysex_disconnect, label = "None", value = -1)
-    for i in range(0, sysex.get_port_count()):
-        portmenu.add_radiobutton(variable = midi_portnum, command = sysex_connect, label = sysex.get_port_name(i), value = i)
 
 class ColorMode(Enum):
     ColorOff    = 0
@@ -235,6 +236,7 @@ class SettingsData:
     def getFrame(self, parent):
         if hasattr(self, "frame") and self.frame:
             return self.frame
+
         self.frame = ttk.Frame(parent, width=320, height=240)
         self.frame.pack(fill="both", expand=True)
 
@@ -377,6 +379,7 @@ class PresetData:
     def getFrame(self, parent):
         if hasattr(self, "frame") and self.frame:
             return self.frame
+
         self.frame = ttk.Frame(parent, width=320, height=240)
         self.frame.pack(fill="both", expand=True)
 
@@ -531,6 +534,7 @@ class Settings:
         for i in range(0, min(PRESET_COUNT, len(data['presets']))):
             self.presets[i].setData(data['presets'][i])
         return True
+settings = Settings()
 
 def save():
     filename = filedialog.asksaveasfilename(title="Save JSON File", filetypes=[('json files', '*.json')])
@@ -580,73 +584,131 @@ def read_preset(i):
     return preset_data
 
 def read():
+    progressbar.start()
+
+    progresstext.configure(text="Checking midi port connection.")
     if not sysex.is_connected():
         messagebox.showerror("Unable to Read", "Please connect to a midi port.")
+        progresstext.configure(text="")
+        progressbar.stop()
         return False
 
+    progresstext.configure(text="Pinging device alive state.")
     if not sysex.check_alive():
         messagebox.showerror("Unable to Read", "Device not preset.")
-        return False
-    if not sysex.check_version(SETTINGS_VERSION):
-        messagebox.showerror("Unable to Read", "Device firmware is incompatible.")
+        progresstext.configure(text="")
+        progressbar.stop()
         return False
 
+    progresstext.configure(text="Matching device settings version.")
+    if not sysex.check_version(SETTINGS_VERSION):
+        progressbar.stop()
+        messagebox.showerror("Unable to Read", "Device firmware is incompatible.")
+        progresstext.configure(text="")
+        return False
+
+    progresstext.configure(text="Reading global configuration from device.")
     settings_data = read_settings()
     if not settings_data:
+        progressbar.stop()
         messagebox.showerror("Unable to Read", "Unknown error in settings response.")
+        progresstext.configure(text="")
         return False
     settings.data.setData(settings_data)
 
     valid = True
     for i in range(0, PRESET_COUNT):
+        progresstext.configure(text="Reading preset #{} from device.".format(i + 1))
         preset_data = read_preset(i)
         if not preset_data:
             valid = False
             break
         settings.presets[i].setData(preset_data)
     if not valid:
+        progressbar.stop()
         messagebox.showerror("Unable to Read", "Unknown error in preset response.")
+        progresstext.configure(text="")
         return False
 
+    progressbar.stop()
+    progresstext.configure(text="Full device read successful.")
     messagebox.showinfo("Read Successful", "Successfully read configuration and presets from device!")
     return True
 
 def write():
+    progressbar.start()
+
+    progresstext.configure(text="Checking midi port connection.")
     if not sysex.is_connected():
+        progressbar.stop()
         messagebox.showerror("Unable to Write", "Please connect to a midi port.")
+        progresstext.configure(text="")
         return False
 
+    progresstext.configure(text="Pinging device alive state.")
     if not sysex.check_alive():
+        progressbar.stop()
         messagebox.showerror("Unable to Write", "Device not preset.")
-        return False
-    if not sysex.check_version(SETTINGS_VERSION):
-        messagebox.showerror("Unable to Write", "Device firmware is incompatible.")
+        progresstext.configure(text="")
         return False
 
+    progresstext.configure(text="Matching device settings version.")
+    if not sysex.check_version(SETTINGS_VERSION):
+        progressbar.stop()
+        messagebox.showerror("Unable to Write", "Device firmware is incompatible.")
+        progresstext.configure(text="")
+        return False
+
+    progresstext.configure(text="Writing global configuration to device.")
     if not sysex.write_settings(SETTINGS_VERSION, list(settings.data.getData().values())):
+        progressbar.stop()
         messagebox.showerror("Unable to Write", "Unknown error in settings response.")
+        progresstext.configure(text="")
         return False
 
     valid = True
     for i in range(0, PRESET_COUNT):
+        progresstext.configure(text="Writing preset #{} to device memory.".format(i + 1))
         if not sysex.write_preset(SETTINGS_VERSION, i, list(settings.presets[i].getData(True).values())):
             valid = False
             break
     if not valid:
+        progressbar.stop()
         messagebox.showerror("Unable to Write", "Unknown error in preset response.")
+        progresstext.configure(text="")
         return False
 
+    progressbar.stop()
+    progresstext.configure(text="Full device write successful.")
     messagebox.showinfo("Write Successful", "Successfully wrote configuration and presets to device!")
     return True
 
-settings = Settings()
 
 notebook = ScrollableNotebook(root, wheelscroll=True, tabmenu=True)
+
+root.grid()
+root.columnconfigure(0, weight=1)
+root.rowconfigure(0, weight=1)
+root.rowconfigure(1, weight=0)
+root.rowconfigure(2, weight=0)
+
+frame = Frame(root)
+frame.grid(column=0, row=0, sticky="news")
 notebook.pack(fill="both", expand=True)
 
 notebook.add(settings.data.getFrame(notebook), text="Config")
 for i in range(0, PRESET_COUNT):
     notebook.add(settings.presets[i].getFrame(notebook), text=("Preset #"+str(i+1)))
+
+progressframe = ttk.Frame(root, padding=(5, 0, 5, 0))
+progressframe.grid(column=0, row=1, sticky="sew")
+
+progresstext = ttk.Label(progressframe, justify=LEFT, text="")
+progresstext.pack(fill="x")
+
+progressbar = ttk.Progressbar(root, orient="horizontal", mode="indeterminate")
+progressbar.grid(column=0, row=2, sticky="sew")
+progressbar.stop()
 
 mainmenu = Menu(frame)
 
