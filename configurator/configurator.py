@@ -13,7 +13,7 @@ import os
 
 from sysex import ColorSpraySysex, MANUFACTURER_ID, DEVICE_ID
 
-SETTINGS_VERSION        = 1
+SETTINGS_VERSION        = 2
 PRESET_COUNT            = 15
 
 root = Tk()
@@ -22,8 +22,8 @@ if os.name == 'nt':
     root.iconbitmap(bitmap="{}/icon.ico".format(os.path.dirname(__file__)))
 elif os.name == 'posix':
     root.iconbitmap(bitmap="@{}/icon.xbm".format(os.path.dirname(__file__)))
-root.geometry("640x320")
-root.minsize(360, 320)
+root.geometry("640x360")
+root.minsize(360, 360)
 
 sysex = ColorSpraySysex()
 
@@ -84,7 +84,7 @@ class ArgbType(Enum):
 #    APA104      = 22
 #    WS2811_400  = 23
 #    GE8822      = 24
-    GW6205      = 25
+#    GW6205      = 25
 #    GW6205_400  = 26
 #    LPD1886     = 27
 #    LPD1886_8BIT = 28
@@ -199,14 +199,18 @@ def build_color_slider(parent, text, var, callback, default=0):
     return frame, slider, number
 
 class SettingsData:
-    data_keys = ["midiChannel", "midiThru", "brightness", "argbCount", "argbType", "dmxCount", "preset"]
+    data_keys = ["midiChannel", "midiThru", "brightness", "argbCount", "argbType", "dmxCount", "dmxChannelSize", "dmxChannelOffset", "dmxBrightness", "dmxBrightnessChannel", "preset"]
     def __init__(self):
         self.midiChannel = 0
         self.midiThru = True
         self.brightness = 64
         self.argbCount = 12
         self.argbType = ArgbType.WS2812B
-        self.dmxCount = 3
+        self.dmxCount = 1
+        self.dmxChannelSize = 3
+        self.dmxChannelOffset = 1
+        self.dmxBrightness = 127
+        self.dmxBrightnessChannel = 0
         self.preset = 0
     def getData(self):
         return {
@@ -216,6 +220,10 @@ class SettingsData:
             'argbCount': self.argbCount,
             'argbType': self.argbType.value,
             'dmxCount': self.dmxCount,
+            'dmxChannelSize': self.dmxChannelSize,
+            'dmxChannelOffset': self.dmxChannelOffset,
+            'dmxBrightness': self.dmxBrightness,
+            'dmxBrightnessChannel': self.dmxBrightnessChannel,
             'preset': self.preset
         }
     def setData(self, data):
@@ -231,6 +239,14 @@ class SettingsData:
             self.argbType = ArgbType(int(data['argbType']))
         if 'dmxCount' in data:
             self.dmxCount = int(data['dmxCount'])
+        if 'dmxChannelSize' in data:
+            self.dmxChannelSize = int(data['dmxChannelSize'])
+        if 'dmxChannelOffset' in data:
+            self.dmxChannelOffset = int(data['dmxChannelOffset'])
+        if 'dmxBrightness' in data:
+            self.dmxBrightness = int(data['dmxBrightness'])
+        if 'dmxBrightnessChannel' in data:
+            self.dmxBrightnessChannel = int(data['dmxBrightnessChannel'])
         if 'preset' in data:
             self.preset = int(data['preset'])
         self.updateVars()
@@ -254,21 +270,44 @@ class SettingsData:
         thru_frame.pack(side="bottom")
 
         self.brightness_var = IntVar()
-        build_slider(self.frame, "Brightness", self.brightness_var, 0, 127, self.brightness, self.updateBrightness)
+        build_slider(self.frame, "Global Brightness", self.brightness_var, 0, 127, self.brightness, self.updateBrightness)
 
-        count_frame = ttk.Frame(self.frame, borderwidth=0, padding=0)
-        count_frame.pack(fill="x")
+        argb_frame = ttk.Frame(self.frame, borderwidth=0, padding=0)
+        argb_frame.pack(fill="x")
 
         self.argbCount_var = StringVar()
-        argb_frame, argb_number = build_number(count_frame, "ARGB Count", self.argbCount_var, 1, 127, str(self.argbCount), self.updateArgbCount)
-        argb_frame.pack(side="left", fill="x", expand=True)
-
-        self.dmxCount_var = StringVar()
-        dmx_frame, dmx_number = build_number(count_frame, "DMX Count", self.dmxCount_var, 1, 127, str(self.dmxCount), self.updateDmxCount)
-        dmx_frame.pack(side="right", fill="x", expand=True)
+        argb_count_frame, argb_count_number = build_number(argb_frame, "ARGB Count", self.argbCount_var, 1, 127, str(self.argbCount), self.updateArgbCount)
+        argb_count_frame.pack(side="left", fill="x", expand=True)
 
         self.argbType_var = StringVar()
-        build_combobox(self.frame, "ARGB Type", self.argbType_var, [name for name, value in vars(ArgbType).items() if not name.startswith("_")], self.argbType.name, self.updateArgbType)
+        argb_type_frame, argb_type_combo = build_combobox(argb_frame, "ARGB Type", self.argbType_var, [name for name, value in vars(ArgbType).items() if not name.startswith("_")], self.argbType.name, self.updateArgbType)
+        argb_type_frame.pack(side="right", fill="x", expand=True)
+
+        dmx_channel_row = ttk.Frame(self.frame, borderwidth=0, padding=0)
+        dmx_channel_row.pack(fill="x")
+
+        self.dmxCount_var = StringVar()
+        dmx_count_frame, dmx_count_number = build_number(dmx_channel_row, "DMX Count", self.dmxCount_var, 1, 127, str(self.dmxCount), self.updateDmxCount)
+        dmx_count_frame.pack(side="left", fill="x", expand=True)
+
+        self.dmxChannelSize_var = StringVar()
+        dmx_size_frame, dmx_size_number = build_number(dmx_channel_row, "DMX Channel Size", self.dmxChannelSize_var, 1, 32, str(self.dmxChannelSize), self.updateDmxChannelSize)
+        dmx_size_frame.pack(side="left", fill="x", expand=True)
+
+        self.dmxChannelOffset_var = StringVar()
+        dmx_offset_frame, dmx_offset_number = build_number(dmx_channel_row, "DMX Channel RGB Offset", self.dmxChannelOffset_var, 1, 32, str(self.dmxChannelOffset), self.updateDmxChannelOffset)
+        dmx_offset_frame.pack(side="left", fill="x", expand=True)
+
+        dmx_brightness_row = ttk.Frame(self.frame, borderwidth=0, padding=0)
+        dmx_brightness_row.pack(fill="x")
+
+        self.dmxBrightness_var = IntVar()
+        dmx_brightness_frame, dmx_brightness_slider = build_slider(dmx_brightness_row, "DMX Brightness", self.dmxBrightness_var, 0, 127, self.dmxBrightness, self.updateDmxBrightness)
+        dmx_brightness_frame.pack(side="left", fill="x", expand=True)
+
+        self.dmxBrightnessChannel_var = StringVar()
+        dmx_brightness_channel_frame, dmx_brightness_channel_number = build_number(dmx_brightness_row, "DMX Brightess Channel Offset", self.dmxBrightnessChannel_var, 1, 32, str(self.dmxBrightnessChannel), self.updateDmxBrightnessChannel)
+        dmx_brightness_channel_frame.pack(side="right", fill="x", expand=True)
 
         self.preset_var = StringVar()
         build_combobox(self.frame, "Default Preset", self.preset_var, ["None"] + ["Preset #"+str(i+1) for i in range(0, PRESET_COUNT)], "None", self.updatePreset)
@@ -281,17 +320,25 @@ class SettingsData:
             self.midiChannel = int(self.midiChannel_var.get())
     def updateMidiThru(self):
         self.midiThru = self.midiThru_var.get()
-    def updateBrightness(self, event):
+    def updateBrightness(self, event=False):
         self.brightness = self.brightness_var.get()
     def updateArgbCount(self):
         self.argbCount = int(self.argbCount_var.get())
-    def updateArgbType(self, event):
+    def updateArgbType(self, event=False):
         for name, value in vars(ArgbType).items():
             if name == self.argbType_var.get():
                 self.argbType = ArgbType(value)
                 break
     def updateDmxCount(self):
         self.dmxCount = int(self.dmxCount_var.get())
+    def updateDmxChannelSize(self):
+        self.dmxChannelSize = int(self.dmxChannelSize_var.get())
+    def updateDmxChannelOffset(self):
+        self.dmxChannelOffset = int(self.dmxChannelOffset_var.get())
+    def updateDmxBrightness(self, event=False):
+        self.dmxBrightness = self.dmxBrightness_var.get()
+    def updateDmxBrightnessChannel(self):
+        self.dmxBrightnessChannel = int(self.dmxBrightnessChannel_var.get())
     def updatePreset(self, event):
         if self.preset_var.get() == "None":
             self.preset = 0
@@ -307,6 +354,10 @@ class SettingsData:
         self.argbCount_var.set(str(self.argbCount))
         self.argbType_var.set(self.argbType.name)
         self.dmxCount_var.set(str(self.dmxCount))
+        self.dmxChannelSize_var.set(str(self.dmxChannelSize))
+        self.dmxChannelOffset_var.set(str(self.dmxChannelOffset))
+        self.dmxBrightness_var.set(self.dmxBrightness)
+        self.dmxBrightnessChannel_var.set(self.dmxBrightnessChannel)
         if self.preset == 0:
             self.preset_var.set("None")
         else:
@@ -450,32 +501,32 @@ class PresetData:
             if name == selected:
                 self.palette = Palette(value)
                 break
-    def updatePaletteSpeed(self, event=0):
+    def updatePaletteSpeed(self, event=False):
         self.palette_speed = self.palette_speed_var.get() / 32.0
-    def updateColorR(self, event=0):
+    def updateColorR(self, event=False):
         self.color_r_var.set(str(int(float(self.color_r_var.get()))))
         self.color_rgb.r = int(math.floor(float(self.color_r_var.get())))
         self.updateColorRGB()
-    def updateColorG(self, event=0):
+    def updateColorG(self, event=False):
         self.color_g_var.set(str(int(float(self.color_g_var.get()))))
         self.color_rgb.g = int(math.floor(float(self.color_g_var.get())))
         self.updateColorRGB()
-    def updateColorB(self, event=0):
+    def updateColorB(self, event=False):
         self.color_b_var.set(str(int(float(self.color_b_var.get()))))
         self.color_rgb.b = int(math.floor(float(self.color_b_var.get())))
         self.updateColorRGB()
     def updateColorRGB(self):
         hex = "#{:02X}{:02X}{:02X}".format(self.color_rgb.r * 2, self.color_rgb.g * 2, self.color_rgb.b * 2)
         self.color_rgb_preview.configure(bg=hex)
-    def updateColorH(self, event=0):
+    def updateColorH(self, event=False):
         self.color_h_var.set(str(int(float(self.color_h_var.get()))))
         self.color_hsv.h = int(math.floor(float(self.color_h_var.get())))
         self.updateColorHSV()
-    def updateColorS(self, event=0):
+    def updateColorS(self, event=False):
         self.color_s_var.set(str(int(float(self.color_s_var.get()))))
         self.color_hsv.s = int(math.floor(float(self.color_s_var.get())))
         self.updateColorHSV()
-    def updateColorV(self, event=0):
+    def updateColorV(self, event=False):
         self.color_v_var.set(str(int(float(self.color_v_var.get()))))
         self.color_hsv.v = int(math.floor(float(self.color_v_var.get())))
         self.updateColorHSV()

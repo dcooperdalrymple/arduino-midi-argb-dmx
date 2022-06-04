@@ -9,7 +9,7 @@
 #include "sysex.h"
 #include "preset.h"
 
-#define SETTINGS_VERSION    1
+#define SETTINGS_VERSION    2
 #define SETTINGS_OFFSET     0x03
 #define PRESET_OFFSET       0x10
 #define PRESET_SIZE         0x10
@@ -54,6 +54,10 @@ typedef struct _SettingsData {
     uint8_t argbCount;
     FastLedType argbType;
     uint8_t dmxCount;
+    uint8_t dmxChannelSize;
+    uint8_t dmxChannelOffset;
+    uint8_t dmxBrightness;
+    uint8_t dmxBrightnessChannel;
     uint8_t preset;
 } SettingsData;
 
@@ -63,7 +67,11 @@ const PROGMEM SettingsData default_settings = {
     .brightness = 64,
     .argbCount = 12,
     .argbType = FLTYPE_WS2812B,
-    .dmxCount = 3,
+    .dmxCount = 1,
+    .dmxChannelSize = 3,
+    .dmxChannelOffset = 1,
+    .dmxBrightness = 255,
+    .dmxBrightnessChannel = 0,
     .preset = 0
 };
 
@@ -93,16 +101,20 @@ public:
     FastLedType getArgbType();
 
     uint8_t getDmxCount();
+    uint8_t getDmxChannelSize();
+    uint8_t getDmxChannelOffset();
+    uint8_t getDmxBrightness();
+    uint8_t getDmxBrightnessChannel();
 
     uint8_t getPreset();
     PresetData* getPresetData(uint8_t i);
 
     bool handleSysex(byte* data, unsigned size);
 
-    void datacpy(void * destination);
+    void datacpy(void * destination, bool adjust = false);
     void presetcpy(void * destination, uint8_t i, bool adjust = false);
 
-    void datawrite(void * source);
+    void datawrite(void * source, bool adjust = false);
     void presetwrite(void * source, uint8_t i, bool adjust = false);
 
 };

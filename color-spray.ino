@@ -30,8 +30,9 @@ USBMIDI_CREATE_CUSTOM_INSTANCE(0, MIDICoreUSB, CustomMidiSettings);
 #define SerialMidiMessage MIDI_NAMESPACE::MidiInterface<MIDI_NAMESPACE::SerialMIDI<HardwareSerial>, CustomMidiSettings>::MidiMessage
 MIDI_CREATE_CUSTOM_INSTANCE(HardwareSerial, Serial1, MIDICoreSerial, CustomMidiSettings);
 
-#include <DmxSimple.h>
 #include <FastLED.h>
+#include <DmxSimple.h> // Included after FastLED.h to prevent loading of default DMX controller
+#include "dmx.h"
 
 #include "sysex.h"
 #include "color.h"
@@ -45,10 +46,12 @@ MIDI_CREATE_CUSTOM_INSTANCE(HardwareSerial, Serial1, MIDICoreSerial, CustomMidiS
 #define ARGB_PIN        2
 #define ARGB_ORDER      GRB
 CRGB *argbLights;
+static CLEDController *argbController;
 
 #define DMX_PIN         7
 #define DMX_ORDER       RGB
 CRGB *dmxLights;
+static DMXSIMPLE<DMX_PIN, DMX_ORDER> *dmxController;
 
 #define RGB_R           9
 #define RGB_G           10

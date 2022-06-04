@@ -24,14 +24,26 @@ uint8_t Settings::getBrightness() {
 }
 
 uint8_t Settings::getArgbCount() {
-    return _data.argbCount;
+    return max(_data.argbCount, 1);
 }
 FastLedType Settings::getArgbType() {
     return (FastLedType)_data.argbType;
 }
 
 uint8_t Settings::getDmxCount() {
-    return _data.dmxCount;
+    return max(_data.dmxCount, 1);
+}
+uint8_t Settings::getDmxChannelSize() {
+    return max(_data.dmxChannelSize, 3);
+}
+uint8_t Settings::getDmxChannelOffset() {
+    return max(_data.dmxChannelOffset, 1);
+}
+uint8_t Settings::getDmxBrightness() {
+    return _data.dmxBrightness;
+}
+uint8_t Settings::getDmxBrightnessChannel() {
+    return _data.dmxBrightnessChannel;
 }
 
 uint8_t Settings::getPreset() {
@@ -90,8 +102,12 @@ void Settings::reset() {
     write_data();
 }
 
-void Settings::datacpy(void * destination) {
+void Settings::datacpy(void * destination, bool adjust = false) {
     memcpy(destination, &_data, sizeof(SettingsData));
+    if (adjust) {
+        SettingsData *ptr = reinterpret_cast<SettingsData *>(destination);
+        ptr->dmxBrightness /= 2;
+    }
 }
 void Settings::presetcpy(void * destination, uint8_t i, bool adjust = false) {
     if (i >= PRESET_COUNT) return;
@@ -107,8 +123,11 @@ void Settings::presetcpy(void * destination, uint8_t i, bool adjust = false) {
     }
 }
 
-void Settings::datawrite(void * source) {
+void Settings::datawrite(void * source, bool adjust = false) {
     memcpy(&_data, source, sizeof(SettingsData));
+    if (adjust) {
+        _data.dmxBrightness *= 2;
+    }
     write_settings();
 }
 void Settings::presetwrite(void * source, uint8_t i, bool adjust = false) {
