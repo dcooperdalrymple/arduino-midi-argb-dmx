@@ -47,11 +47,13 @@ MIDI_CREATE_CUSTOM_INSTANCE(HardwareSerial, Serial1, MIDICoreSerial, CustomMidiS
 #define ARGB_ORDER      GRB
 CRGB *argbLights;
 static CLEDController *argbController;
+uint8_t modArgb = 1;
 
 #define DMX_PIN         7
 #define DMX_ORDER       RGB
 CRGB *dmxLights;
 static DMXSIMPLE<DMX_PIN, DMX_ORDER> *dmxController;
+uint8_t modDmx = 1;
 
 #define RGB_R           9
 #define RGB_G           10
@@ -167,6 +169,7 @@ void configure() {
         delete argbLights;
     }
     argbLights = new CRGB[settings.getArgbCount()];
+    modArgb = max(floor((float)settings.getDmxCount() / (float)settings.getArgbCount()), 1);
     if (firstConfigure) {
         switch (settings.getArgbType()) {
             case FLTYPE_NEOPIXEL:
@@ -268,6 +271,7 @@ void configure() {
         delete dmxLights;
     }
     dmxLights = new CRGB[settings.getDmxCount()];
+    modDmx = max(floor((float)settings.getArgbCount() / (float)settings.getDmxCount()), 1);
     if (firstConfigure) {
         dmxController = new DMXSIMPLE<DMX_PIN, DMX_ORDER>;
         FastLED.addLeds(dmxController, dmxLights, settings.getDmxCount());
@@ -363,11 +367,14 @@ void FillLEDsFromPaletteColors(uint8_t index) {
 
     argbLights[0] = c;
     dmxLights[0] = c;
+
+    uint8_t iArgb = 1;
+    uint8_t iDmx = 1;
     for (int i = 1; i < max(settings.getArgbCount(), settings.getDmxCount()); i++) {
         index += 3;
         c = ColorFromPalette(current_palette, index, brightness, blending);
-        if (i < settings.getArgbCount()) argbLights[i] = c;
-        if (i < settings.getDmxCount()) dmxLights[i] = c;
+        if (i % modArgb == 0 && iArgb < settings.getArgbCount()) argbLights[iArgb++] = c;
+        if (i % modDmx == 0 && iDmx < settings.getDmxCount()) dmxLights[iDmx++] = c;
     }
 }
 
