@@ -47,7 +47,7 @@ MIDI_CREATE_CUSTOM_INSTANCE(HardwareSerial, Serial1, MIDICoreSerial, CustomMidiS
 CRGB *argbLights;
 
 #define DMX_PIN         7
-#define DMX_ORDER       GBR
+#define DMX_ORDER       RGB
 CRGB *dmxLights;
 
 #define RGB_R           9
