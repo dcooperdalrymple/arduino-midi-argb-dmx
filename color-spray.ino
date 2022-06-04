@@ -459,6 +459,19 @@ void systemExclusive(byte* data, unsigned size) {
     triggerLed();
 
     unsigned response_size = 3;
+    switch (data[0x03]) {
+        case COMMAND_READ_VERSION:
+            response_size = 4;
+            break;
+        case COMMAND_READ_SETTINGS:
+            response_size = 4 + sizeof(SettingsData);
+            break;
+        case COMMAND_READ_PRESET:
+            if (size >= 5 && data[0x04] < PRESET_COUNT) {
+                response_size = 4 + sizeof(PresetData);
+            }
+            break;
+    }
     byte* response = new byte[response_size];
     response[0x00] = MANUFACTURER_ID;
     response[0x01] = DEVICE_ID;
@@ -470,31 +483,16 @@ void systemExclusive(byte* data, unsigned size) {
             break;
 
         case COMMAND_READ_VERSION:
-            delete response;
-            response_size = 4;
-            response = new byte[response_size];
-            response[0x00] = MANUFACTURER_ID;
-            response[0x01] = DEVICE_ID;
             response[0x02] = RESPONSE_SUCCESS;
             response[0x03] = SETTINGS_VERSION;
             break;
         case COMMAND_READ_SETTINGS:
-            delete response;
-            response_size = 4 + sizeof(SettingsData);
-            response = new byte[response_size];
-            response[0x00] = MANUFACTURER_ID;
-            response[0x01] = DEVICE_ID;
             response[0x02] = RESPONSE_SUCCESS;
             response[0x03] = SETTINGS_VERSION;
-            settings.datacpy(response+4);
+            settings.datacpy(response+4, true);
             break;
         case COMMAND_READ_PRESET:
             if (size >= 5 && data[0x04] < PRESET_COUNT) {
-                delete response;
-                response_size = 4 + sizeof(PresetData);
-                response = new byte[response_size];
-                response[0x00] = MANUFACTURER_ID;
-                response[0x01] = DEVICE_ID;
                 response[0x02] = RESPONSE_SUCCESS;
                 response[0x03] = SETTINGS_VERSION;
                 settings.presetcpy(response+4, data[0x04], true);
@@ -503,7 +501,7 @@ void systemExclusive(byte* data, unsigned size) {
 
         case COMMAND_WRITE_SETTINGS:
             if (size == 5 + sizeof(SettingsData) + 1 && data[0x04] == SETTINGS_VERSION) {
-                settings.datawrite(data+5);
+                settings.datawrite(data+5, true);
                 response[0x02] = RESPONSE_SUCCESS;
             }
             break;
