@@ -85,3 +85,7 @@ Copy and paste `plugins/color-spray-jsfx` into your REAPER JSFX install director
 * [Arduino USB-MIDI Transport](https://github.com/lathoub/Arduino-USBMIDI)
 * [FastLED](https://fastled.io/)
 * [DmxSimple](https://github.com/PaulStoffregen/DmxSimple)
+
+---
+
+[OSHW] US00211 | Certified open source hardware | oshwa.org/cert.
