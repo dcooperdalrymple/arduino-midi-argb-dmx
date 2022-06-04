@@ -8,6 +8,7 @@ END_OF_EXCLUSIVE        = 0xF7
 MANUFACTURER_ID         = 0x60
 DEVICE_ID               = 0x01
 COMMAND_ALIVE           = 0x41
+COMMAND_RESET           = 0x42
 COMMAND_READ_VERSION    = 0x51
 COMMAND_READ_SETTINGS   = 0x52
 COMMAND_READ_PRESET     = 0x53
@@ -106,7 +107,18 @@ class ColorSpraySysex:
     def check_version(self, version):
         self.send_command(COMMAND_READ_VERSION)
         data = self.get_response()
-        return data and len(data) == 4 and data[2] == RESPONSE_SUCCESS and data[3] == version
+
+        if data and len(data) == 4 and data[2] == RESPONSE_SUCCESS:
+            print("Device reported firmware version {}. Expecting version {}.".format(data[3], version))
+            return data[3] == version
+        else:
+            print("Invalid response when checking firmware version.")
+            return False
+
+    def send_reset(self):
+        self.send_command(COMMAND_RESET)
+        data = self.get_response()
+        return data and len(data) == 3 and data[2] == RESPONSE_SUCCESS
 
     def read_settings(self, version):
         self.send_command(COMMAND_READ_SETTINGS)

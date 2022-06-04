@@ -66,6 +66,7 @@ TBlendType blending = LINEARBLEND;
 
 Settings settings;
 
+void configure();
 void loadPreset(uint8_t i);
 
 #if USB_MIDI
@@ -79,9 +80,56 @@ void setup() {
     pinMode(LED, OUTPUT);
     digitalWrite(LED, HIGH);
 
+    pinMode(0, INPUT);
+    pinMode(1, OUTPUT);
+
+    pinMode(RGB_R, OUTPUT);
+    analogWrite(RGB_R, 0);
+    pinMode(RGB_G, OUTPUT);
+    analogWrite(RGB_G, 0);
+    pinMode(RGB_B, OUTPUT);
+    analogWrite(RGB_B, 0);
+    pinMode(RGB_W, OUTPUT);
+    analogWrite(RGB_W, 0);
+
     #if USB_MIDI
     #else
     Serial.begin(9600);
+    #endif
+
+    #if USB_MIDI
+    MIDICoreSerial.setHandleMessage(messageUartToUsb);
+    #endif
+    MIDICoreSerial.setHandleControlChange(controlChange);
+    MIDICoreSerial.setHandleProgramChange(programChange);
+    MIDICoreSerial.setHandleNoteOn(noteOn);
+    MIDICoreSerial.setHandleSystemExclusive(systemExclusive);
+
+    #if USB_MIDI
+    MIDICoreUSB.turnThruOff();
+    MIDICoreUSB.setHandleMessage(messageUsbToUart);
+    MIDICoreUSB.setHandleControlChange(controlChange);
+    MIDICoreUSB.setHandleProgramChange(programChange);
+    MIDICoreUSB.setHandleNoteOn(noteOn);
+    MIDICoreUSB.setHandleSystemExclusive(systemExclusive);
+    #endif
+
+    MIDICoreSerial.begin(MIDI_CHANNEL_OMNI);
+    #if USB_MIDI
+    MIDICoreUSB.begin(MIDI_CHANNEL_OMNI);
+    #endif
+
+    configure();
+
+    digitalWrite(LED, LOW); // Indicate that initialization is complete
+}
+
+bool firstConfigure = true;
+void configure() {
+    if (!firstConfigure) FastLED.clearData();
+
+    #if USB_MIDI
+    #else
     unsigned long usb_start = millis();
     while (!Serial && millis() - usb_start < USB_TIMEOUT) { }
     if (Serial) {
@@ -105,145 +153,137 @@ void setup() {
     }
     #endif
 
-    pinMode(0, INPUT);
-    pinMode(1, OUTPUT);
     if (settings.getMidiThru()) {
         MIDICoreSerial.turnThruOn();
     } else {
         MIDICoreSerial.turnThruOff();
     }
-    #if USB_MIDI
-    MIDICoreSerial.setHandleMessage(messageUartToUsb);
-    #endif
-    MIDICoreSerial.setHandleControlChange(controlChange);
-    MIDICoreSerial.setHandleProgramChange(programChange);
-    MIDICoreSerial.setHandleNoteOn(noteOn);
-    MIDICoreSerial.setHandleSystemExclusive(systemExclusive);
 
-    #if USB_MIDI
-    MIDICoreUSB.turnThruOff();
-    MIDICoreUSB.setHandleMessage(messageUsbToUart);
-    MIDICoreUSB.setHandleControlChange(controlChange);
-    MIDICoreUSB.setHandleProgramChange(programChange);
-    MIDICoreUSB.setHandleNoteOn(noteOn);
-    MIDICoreUSB.setHandleSystemExclusive(systemExclusive);
-    #endif
-
-    MIDICoreSerial.begin(MIDI_CHANNEL_OMNI);
-    #if USB_MIDI
-    MIDICoreUSB.begin(MIDI_CHANNEL_OMNI);
-    #endif
-
+    if (!firstConfigure) {
+        argbController->setLeds(NULL, 0);
+        delete argbLights;
+    }
     argbLights = new CRGB[settings.getArgbCount()];
-    switch (settings.getArgbType()) {
-        case FLTYPE_NEOPIXEL:
-            FastLED.addLeds<NEOPIXEL, ARGB_PIN>(argbLights, settings.getArgbCount()).setCorrection(TypicalLEDStrip);
-            break;
-        case FLTYPE_SM16703:
-            //FastLED.addLeds<SM16703, ARGB_PIN, ARGB_ORDER>(argbLights, settings.getArgbCount()).setCorrection(TypicalLEDStrip);
-            break;
-        case FLTYPE_TM1829:
-            //FastLED.addLeds<TM1829, ARGB_PIN, ARGB_ORDER>(argbLights, settings.getArgbCount()).setCorrection(TypicalLEDStrip);
-            break;
-        case FLTYPE_TM1812:
-            //FastLED.addLeds<TM1812, ARGB_PIN, ARGB_ORDER>(argbLights, settings.getArgbCount()).setCorrection(TypicalLEDStrip);
-            break;
-        case FLTYPE_TM1809:
-            FastLED.addLeds<TM1809, ARGB_PIN, ARGB_ORDER>(argbLights, settings.getArgbCount()).setCorrection(TypicalLEDStrip);
-            break;
-        case FLTYPE_TM1804:
-            FastLED.addLeds<TM1804, ARGB_PIN, ARGB_ORDER>(argbLights, settings.getArgbCount()).setCorrection(TypicalLEDStrip);
-            break;
-        case FLTYPE_TM1803:
-            FastLED.addLeds<TM1803, ARGB_PIN, ARGB_ORDER>(argbLights, settings.getArgbCount()).setCorrection(TypicalLEDStrip);
-            break;
-        case FLTYPE_UCS1903:
-            FastLED.addLeds<UCS1903, ARGB_PIN, ARGB_ORDER>(argbLights, settings.getArgbCount()).setCorrection(TypicalLEDStrip);
-            break;
-        case FLTYPE_UCS1903B:
-            //FastLED.addLeds<UCS1903B, ARGB_PIN, ARGB_ORDER>(argbLights, settings.getArgbCount()).setCorrection(TypicalLEDStrip);
-            break;
-        case FLTYPE_UCS1904:
-            //FastLED.addLeds<UCS1904, ARGB_PIN, ARGB_ORDER>(argbLights, settings.getArgbCount()).setCorrection(TypicalLEDStrip);
-            break;
-        case FLTYPE_UCS2903:
-            //FastLED.addLeds<UCS2903, ARGB_PIN, ARGB_ORDER>(argbLights, settings.getArgbCount()).setCorrection(TypicalLEDStrip);
-            break;
-        case FLTYPE_WS2812:
-            FastLED.addLeds<WS2812, ARGB_PIN, ARGB_ORDER>(argbLights, settings.getArgbCount()).setCorrection(TypicalLEDStrip);
-            break;
-        case FLTYPE_WS2852:
-            //FastLED.addLeds<WS2852, ARGB_PIN, ARGB_ORDER>(argbLights, settings.getArgbCount()).setCorrection(TypicalLEDStrip);
-            break;
-        case FLTYPE_WS2812B:
-            FastLED.addLeds<WS2812B, ARGB_PIN, ARGB_ORDER>(argbLights, settings.getArgbCount()).setCorrection(TypicalLEDStrip);
-            break;
-        case FLTYPE_GS1903:
-            //FastLED.addLeds<GS1903, ARGB_PIN, ARGB_ORDER>(argbLights, settings.getArgbCount()).setCorrection(TypicalLEDStrip);
-            break;
-        case FLTYPE_SK6812:
-            //FastLED.addLeds<SK6812, ARGB_PIN, ARGB_ORDER>(argbLights, settings.getArgbCount()).setCorrection(TypicalLEDStrip);
-            break;
-        case FLTYPE_SK6822:
-            //FastLED.addLeds<SK6822, ARGB_PIN, ARGB_ORDER>(argbLights, settings.getArgbCount()).setCorrection(TypicalLEDStrip);
-            break;
-        case FLTYPE_APA106:
-            //FastLED.addLeds<APA106, ARGB_PIN, ARGB_ORDER>(argbLights, settings.getArgbCount()).setCorrection(TypicalLEDStrip);
-            break;
-        case FLTYPE_PL9823:
-            //FastLED.addLeds<PL9823, ARGB_PIN, ARGB_ORDER>(argbLights, settings.getArgbCount()).setCorrection(TypicalLEDStrip);
-            break;
-        case FLTYPE_WS2811:
-            FastLED.addLeds<WS2811, ARGB_PIN, ARGB_ORDER>(argbLights, settings.getArgbCount()).setCorrection(TypicalLEDStrip);
-            break;
-        case FLTYPE_WS2813:
-            FastLED.addLeds<WS2813, ARGB_PIN, ARGB_ORDER>(argbLights, settings.getArgbCount()).setCorrection(TypicalLEDStrip);
-            break;
-        case FLTYPE_APA104:
-            //FastLED.addLeds<APA104, ARGB_PIN, ARGB_ORDER>(argbLights, settings.getArgbCount()).setCorrection(TypicalLEDStrip);
-            break;
-        case FLTYPE_WS2811_400:
-            //FastLED.addLeds<WS2811_400, ARGB_PIN, ARGB_ORDER>(argbLights, settings.getArgbCount()).setCorrection(TypicalLEDStrip);
-            break;
-        case FLTYPE_GE8822:
-            //FastLED.addLeds<GE8822, ARGB_PIN, ARGB_ORDER>(argbLights, settings.getArgbCount()).setCorrection(TypicalLEDStrip);
-            break;
-        case FLTYPE_GW6205:
-            //FastLED.addLeds<GW6205, ARGB_PIN, ARGB_ORDER>(argbLights, settings.getArgbCount()).setCorrection(TypicalLEDStrip);
-            break;
-        case FLTYPE_GW6205_400:
-            //FastLED.addLeds<GW6205_400, ARGB_PIN, ARGB_ORDER>(argbLights, settings.getArgbCount()).setCorrection(TypicalLEDStrip);
-            break;
-        case FLTYPE_LPD1886:
-            //FastLED.addLeds<LPD1886, ARGB_PIN, ARGB_ORDER>(argbLights, settings.getArgbCount()).setCorrection(TypicalLEDStrip);
-            break;
-        case FLTYPE_LPD1886_8BIT:
-            FastLED.addLeds<LPD1886_8BIT, ARGB_PIN, ARGB_ORDER>(argbLights, settings.getArgbCount()).setCorrection(TypicalLEDStrip);
-            break;
-        case FLTYPE_NONE:
-        default:
-            break;
+    if (firstConfigure) {
+        switch (settings.getArgbType()) {
+            case FLTYPE_NEOPIXEL:
+                argbController = new NEOPIXEL<ARGB_PIN>;
+                break;
+            case FLTYPE_SM16703:
+                //argbController = new SM16703<ARGB_PIN, ARGB_ORDER>;
+                break;
+            case FLTYPE_TM1829:
+                //argbController = new TM1829<ARGB_PIN, ARGB_ORDER>;
+                break;
+            case FLTYPE_TM1812:
+                //argbController = new TM1812<ARGB_PIN, ARGB_ORDER>;
+                break;
+            case FLTYPE_TM1809:
+                argbController = new TM1809<ARGB_PIN, ARGB_ORDER>;
+                break;
+            case FLTYPE_TM1804:
+                argbController = new TM1804<ARGB_PIN, ARGB_ORDER>;
+                break;
+            case FLTYPE_TM1803:
+                argbController = new TM1803<ARGB_PIN, ARGB_ORDER>;
+                break;
+            case FLTYPE_UCS1903:
+                argbController = new UCS1903<ARGB_PIN, ARGB_ORDER>;
+                break;
+            case FLTYPE_UCS1903B:
+                //argbController = new UCS1903B<ARGB_PIN, ARGB_ORDER>;
+                break;
+            case FLTYPE_UCS1904:
+                //argbController = new UCS1904<ARGB_PIN, ARGB_ORDER>;
+                break;
+            case FLTYPE_UCS2903:
+                //argbController = new UCS2903<ARGB_PIN, ARGB_ORDER>;
+                break;
+            case FLTYPE_WS2812:
+                argbController = new WS2812<ARGB_PIN, ARGB_ORDER>;
+                break;
+            case FLTYPE_WS2852:
+                //argbController = new WS2852<ARGB_PIN, ARGB_ORDER>;
+                break;
+            case FLTYPE_WS2812B:
+                argbController = new WS2812B<ARGB_PIN, ARGB_ORDER>;
+                break;
+            case FLTYPE_GS1903:
+                //argbController = new GS1903<ARGB_PIN, ARGB_ORDER>;
+                break;
+            case FLTYPE_SK6812:
+                //argbController = new SK6812<ARGB_PIN, ARGB_ORDER>;
+                break;
+            case FLTYPE_SK6822:
+                //argbController = new SK6822<ARGB_PIN, ARGB_ORDER>;
+                break;
+            case FLTYPE_APA106:
+                //argbController = new APA106<ARGB_PIN, ARGB_ORDER>;
+                break;
+            case FLTYPE_PL9823:
+                //argbController = new PL9823<ARGB_PIN, ARGB_ORDER>;
+                break;
+            case FLTYPE_WS2811:
+                argbController = new WS2811<ARGB_PIN, ARGB_ORDER>;
+                break;
+            case FLTYPE_WS2813:
+                argbController = new WS2813<ARGB_PIN, ARGB_ORDER>;
+                break;
+            case FLTYPE_APA104:
+                //argbController = new APA104<ARGB_PIN, ARGB_ORDER>;
+                break;
+            case FLTYPE_WS2811_400:
+                //argbController = new WS2811_400<ARGB_PIN, ARGB_ORDER>;
+                break;
+            case FLTYPE_GE8822:
+                //argbController = new GE8822<ARGB_PIN, ARGB_ORDER>;
+                break;
+            case FLTYPE_GW6205:
+                ///argbController = new GW6205<ARGB_PIN, ARGB_ORDER>;
+                break;
+            case FLTYPE_GW6205_400:
+                //argbController = new GW6205_400<ARGB_PIN, ARGB_ORDER>;
+                break;
+            case FLTYPE_LPD1886:
+                //argbController = new LPD1886<ARGB_PIN, ARGB_ORDER>;
+                break;
+            case FLTYPE_LPD1886_8BIT:
+                ///argbController = new LPD1886_8BIT<ARGB_PIN, ARGB_ORDER>;
+                break;
+            case FLTYPE_NONE:
+            default:
+                break;
+        }
+        FastLED.addLeds(argbController, argbLights, settings.getArgbCount()).setCorrection(TypicalLEDStrip);
+    } else {
+        argbController->setLeds(argbLights, settings.getArgbCount());
     }
 
+
+    if (!firstConfigure) {
+        dmxController->setLeds(NULL, 0);
+        delete dmxLights;
+    }
     dmxLights = new CRGB[settings.getDmxCount()];
-    FastLED.addLeds<DMXSIMPLE, DMX_PIN, DMX_ORDER>(dmxLights, settings.getDmxCount());
+    if (firstConfigure) {
+        dmxController = new DMXSIMPLE<DMX_PIN, DMX_ORDER>;
+        FastLED.addLeds(dmxController, dmxLights, settings.getDmxCount());
+    } else {
+        dmxController->setLeds(dmxLights, settings.getDmxCount());
+    }
+    dmxController->setChannelSize(settings.getDmxChannelSize());
+    dmxController->setChannelOffset(settings.getDmxChannelOffset());
+    dmxController->setBrightness(settings.getDmxBrightness());
+    dmxController->setBrightnessChannel(settings.getDmxBrightnessChannel());
+    //dmxController->setMaxChannel(settings.getDmxCount() * settings.getDmxChannelSize());
 
     FastLED.setBrightness(settings.getBrightness());
-
-    pinMode(RGB_R, OUTPUT);
-    analogWrite(RGB_R, 0);
-    pinMode(RGB_G, OUTPUT);
-    analogWrite(RGB_G, 0);
-    pinMode(RGB_B, OUTPUT);
-    analogWrite(RGB_B, 0);
-    pinMode(RGB_W, OUTPUT);
-    analogWrite(RGB_W, 0);
 
     if (settings.getPreset() > 0) {
         loadPreset(settings.getPreset() - 1);
     }
 
-    digitalWrite(LED, LOW); // Indicate that initialization is complete
+    firstConfigure = false;
 }
 
 CRGBPalette16 target_palette(CRGB::Black);
@@ -479,6 +519,10 @@ void systemExclusive(byte* data, unsigned size) {
 
     switch (data[0x03]) {
         case COMMAND_ALIVE:
+            response[0x02] = RESPONSE_SUCCESS;
+            break;
+        case COMMAND_RESET:
+            configure();
             response[0x02] = RESPONSE_SUCCESS;
             break;
 

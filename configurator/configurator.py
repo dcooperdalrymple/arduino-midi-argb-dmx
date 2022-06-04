@@ -45,8 +45,10 @@ def sysex_disconnect():
     if not sysex.is_connected():
         midi_portnum.set(-1)
         return False
-    progresstext.configure(text="Disconnected from midi port, {}.".format(sysex.get_port_name(midi_portnum.get())))
+
     sysex.disconnect()
+    if midi_portnum.get() >= 0:
+        progresstext.configure(text="Disconnected from midi port, {}.".format(sysex.get_port_name(midi_portnum.get())))
     midi_portnum.set(-1)
     return True
 
@@ -678,11 +680,43 @@ def write():
         progresstext.configure(text="")
         return False
 
+    if not sysex.send_reset():
+        progressbar.stop()
+        progresstext.configure(text="Full device write successful; device not reset.")
+        messagebox.showerror("Unable to Write", "Unable to reset device. You may need to reset the device manually for the new settings to take effect.")
+        return False
+
     progressbar.stop()
     progresstext.configure(text="Full device write successful.")
     messagebox.showinfo("Write Successful", "Successfully wrote configuration and presets to device!")
     return True
 
+def reset():
+    progressbar.start()
+
+    progresstext.configure(text="Checking midi port connection.")
+    if not sysex.is_connected():
+        progressbar.stop()
+        messagebox.showerror("Unable to Reset", "Please connect to a midi port.")
+        progresstext.configure(text="")
+        return False
+
+    progresstext.configure(text="Pinging device alive state.")
+    if not sysex.check_alive():
+        progressbar.stop()
+        messagebox.showerror("Unable to Reset", "Device not preset.")
+        progresstext.configure(text="")
+        return False
+
+    if not sysex.send_reset():
+        progressbar.stop()
+        progresstext.configure(text="Full device write successful; device not reset.")
+        messagebox.showerror("Unable to Reset", "Unable to reset device. You may need to reset the device manually.")
+        return False
+
+    progressbar.stop()
+    progresstext.configure(text="Device successfully reset.")
+    return True
 
 notebook = ScrollableNotebook(root, wheelscroll=True, tabmenu=True)
 
@@ -720,14 +754,23 @@ mainmenu.add_cascade(label = "File", menu = filemenu)
 
 devicemenu = Menu(mainmenu, tearoff = 0)
 portmenu = Menu(devicemenu, tearoff = 0)
-def update_portmenu(event=0):
+def update_portmenu(event=False):
+    if portmenu.index("end"):
+        portmenu.delete(0, 'end')
+
+    portmenu.add_command(label = "Refresh", command = refresh_portmenu)
+
     portmenu.add_radiobutton(variable = midi_portnum, command = sysex_disconnect, label = "None", value = -1)
     for i in range(0, sysex.get_port_count()):
         portmenu.add_radiobutton(variable = midi_portnum, command = sysex_connect, label = sysex.get_port_name(i), value = i)
+def refresh_portmenu(event=False):
+    sysex_disconnect()
+    update_portmenu()
 update_portmenu()
 devicemenu.add_cascade(label = "Port", menu = portmenu)
 devicemenu.add_command(label = "Read", command = read)
 devicemenu.add_command(label = "Write", command = write)
+devicemenu.add_command(label = "Reset", command = reset)
 mainmenu.add_cascade(label = "Device", menu = devicemenu)
 
 mainmenu.bind("<<MenuSelect>>", update_portmenu);
