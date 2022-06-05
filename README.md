@@ -11,7 +11,9 @@ For 5V/12V RGBW operation, you can choose between NPN or N-channel MOSFETs in a 
 An XLR connector is provided as an alternative to the ARGB pin header. This connector is non-standard and is intended for custom installations where long, secure cable runs are desired. Avoid mixing the DMX and ARGB connections, though I've attempted to make their pinouts very similar to avoid shorting.
 
 ## Configuration
-_Details Coming Soon_
+The device's configuration is stored within the internal EEPROM memory of the Atmel 32u4. If the appropriate configuration settings aren't already installed, the device will reformat the EEPROM to it's default settings. Midi SysEx messages are used in order to read and write new configuration settings.
+
+A python-based configurator GUI program is provided to help read, backup, and write device configuration to the Color Spray. The program can be run after installing all [dependencies](configurator/manual.md#dependencies) by running `python configurator/configurator.py` from the root directory of the repository. More information is provided in the [manual](configurator/manual.md).
 
 ## MIDI Implementation
 
