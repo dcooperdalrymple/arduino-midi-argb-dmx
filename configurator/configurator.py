@@ -3,6 +3,9 @@ from tkinter import *
 from tkinter import messagebox
 from tkinter import ttk
 from tkinter import filedialog
+from tkinter import simpledialog
+from PIL import Image, ImageTk
+import PIL
 from ScrollableNotebook import *
 import time
 from enum import Enum
@@ -10,6 +13,8 @@ import math
 import colorsys
 import json
 import os
+from tkinterweb import HtmlFrame
+import webbrowser
 
 from sysex import ColorSpraySysex, MANUFACTURER_ID, DEVICE_ID
 
@@ -18,10 +23,7 @@ PRESET_COUNT            = 15
 
 root = Tk()
 root.title('Color Spray Configurator')
-if os.name == 'nt':
-    root.iconbitmap(bitmap="{}/icon.ico".format(os.path.dirname(__file__)))
-elif os.name == 'posix':
-    root.iconbitmap(bitmap="@{}/icon.xbm".format(os.path.dirname(__file__)))
+root.tk.call('wm', 'iconphoto', root._w, tkinter.PhotoImage(file="{}/assets/icon.png".format(os.path.dirname(__file__))))
 root.geometry("640x360")
 root.minsize(360, 360)
 
@@ -769,7 +771,55 @@ def reset():
     progresstext.configure(text="Device successfully reset.")
     return True
 
-notebook = ScrollableNotebook(root, wheelscroll=True, tabmenu=True)
+class AboutDialog(simpledialog.Dialog):
+    def __init__(self, parent, title="About Configurator"):
+        super().__init__(parent, title)
+    def body(self, frame):
+        frame.pack(fill="both", expand=True)
+
+        self.image_source = PIL.Image.open("{}/assets/logo.png".format(os.path.dirname(__file__)))
+        self.image = PIL.ImageTk.PhotoImage(self.image_source)
+        self.image_label = ttk.Label(frame)
+        self.image_label.image = self.image
+        self.image_label.configure(image=self.image)
+        self.image_label.place(relx=0.5, rely=0.25, anchor=CENTER)
+
+        ttk.Label(frame, text="Configurator", font=("sans-serif", 16, "bold"), justify=CENTER).place(relx=0.5, rely=0.5, anchor=CENTER)
+        ttk.Label(frame, text="Version 1.0", font=("sans-serif", 14, "normal"), justify=CENTER).place(relx=0.5, rely=0.6, anchor=CENTER)
+        link = ttk.Label(frame, text="dcdalrymple.com/color-spray", font=("sans-serif", 12, "normal"), justify=CENTER, foreground="blue", cursor="hand2")
+        link.place(relx=0.5, rely=0.7, anchor=CENTER)
+        link.bind("<Button-1>", lambda e: webbrowser.open_new_tab("https://dcdalrymple.com/color-spray"))
+        ttk.Label(frame, text="Created by Cooper Dalrymple, 2022", font=("sans-serif", 12, "normal"), justify=CENTER).place(relx=0.5, rely=0.8, anchor=CENTER)
+        ttk.Label(frame, text="Licensed under GPL v3.0", font=("sans-serif", 12, "normal"), justify=CENTER).place(relx=0.5, rely=0.9, anchor=CENTER)
+
+        self.geometry("320x240")
+        self.resizable(False, False)
+        return frame
+    def press(self):
+        self.destroy()
+    def buttonbox(self):
+        self.bind("<Return>", lambda event: self.press())
+        self.bind("<Escape>", lambda event: self.press())
+def about():
+    dialog = AboutDialog(parent=root)
+
+class ManualDialog(simpledialog.Dialog):
+    def __init__(self, parent, title="Configurator Manual"):
+        super().__init__(parent, title)
+    def body(self, frame):
+        frame.pack(fill="both", expand=True)
+        self.html_frame = HtmlFrame(frame, messages_enabled=False)
+        self.html_frame.load_file("{}/assets/manual.html".format(os.path.dirname(__file__)))
+        self.html_frame.pack(fill="both", expand=True)
+        self.geometry("420x240")
+        return frame
+    def press(self):
+        self.destroy()
+    def buttonbox(self):
+        self.bind("<Return>", lambda event: self.press())
+        self.bind("<Escape>", lambda event: self.press())
+def manual():
+    dialog = ManualDialog(parent=root)
 
 root.grid()
 root.columnconfigure(0, weight=1)
@@ -779,6 +829,8 @@ root.rowconfigure(2, weight=0)
 
 frame = Frame(root)
 frame.grid(column=0, row=0, sticky="news")
+
+notebook = ScrollableNotebook(frame, wheelscroll=True, tabmenu=True)
 notebook.pack(fill="both", expand=True)
 
 notebook.add(settings.data.getFrame(notebook), text="Config")
@@ -824,7 +876,10 @@ devicemenu.add_command(label = "Write", command = write)
 devicemenu.add_command(label = "Reset", command = reset)
 mainmenu.add_cascade(label = "Device", menu = devicemenu)
 
-mainmenu.bind("<<MenuSelect>>", update_portmenu);
+helpmenu = Menu(mainmenu, tearoff = 0)
+helpmenu.add_command(label = "About", command = about)
+helpmenu.add_command(label = "Manual", command = manual)
+mainmenu.add_cascade(label = "Help", menu = helpmenu)
 
 root.config(menu = mainmenu)
 root.mainloop()

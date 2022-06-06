@@ -1,0 +1,194 @@
+<html>
+
+<head>
+    <title>Color Spray Configurator Manual</title>
+</head>
+
+<body>
+    <h1 id="color-spray-configurator">Color Spray Configurator</h1>
+    <blockquote>
+        <p>Configure the settings and presets of the Color Spray midi light controller.</p>
+    </blockquote>
+    <h2 id="table-of-contents">Table of Contents</h2>
+    <ol>
+        <li><a href="#config">Config</a>
+            <ul>
+                <li><a href="#midi-channel">Midi Channel</a></li>
+                <li><a href="#midi-thru">Midi Thru</a></li>
+                <li><a href="#global-brightness">Global Brightness</a></li>
+                <li><a href="#argb-count">ARGB Count</a></li>
+                <li><a href="#argb-type">ARGB Type</a></li>
+                <li><a href="#dmx">DMX</a>
+                    <ul>
+                        <li><a href="#dmx-count">Count</a></li>
+                        <li><a href="#dmx-channel-size">Channel Size</a></li>
+                        <li><a href="#dmx-rgb-offset">RGB Offset</a></li>
+                        <li><a href="#dmx-brightness">Brightness</a></li>
+                        <li><a href="#dmx-brightness-channel">Brightness Channel</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+        <li><a href="#preset">Presets</a>
+            <ul>
+                <li><a href="#preset-program">Program Number</a></li>
+                <li><a href="#preset-note">Note</a></li>
+                <li><a href="#preset-mode">Mode</a></li>
+            </ul>
+        </li>
+        <li><a href="#json">Saving &amp; Loading JSON Files</a>
+            <ul>
+                <li><a href="#json-save">Saving a JSON File</a></li>
+                <li><a href="#json-load">Loading a JSON File</a></li>
+                <li><a href="#json-modify">Modifying JSON Files</a></li>
+            </ul>
+        </li>
+        <li><a href="#device">Reading &amp; Writing to Device</a>
+            <ul>
+                <li><a href="#device-port">Selecting the Device&#39;s Port</a></li>
+                <li><a href="#device-read">Reading from the Device</a></li>
+                <li><a href="#device-write">Writing from the Device</a></li>
+                <li><a href="#device-reset">Software Reset</a></li>
+            </ul>
+        </li>
+        <li><a href="#dependencies">Software Dependencies</a></li>
+    </ol>
+    <hr>
+    <h2 id="config-span-id-config-">Config<span id="config" /></h2>
+    <p>The settings in this area will apply to all device operations. Most settings will take effect with a software reset after the device is written to, but some (such as the <em>ARGB Type</em>) may require a hardware reset before they take affect.
+    </p>
+    <h3 id="midi-channel-span-id-midi-channel-">Midi Channel<span id="midi-channel" /></h3>
+    <p>Choose the desired midi channel to accept all midi messages: control change, program change, and note on. By default, the device is configured for <em>Omni</em> mode where it will accept all messages. Changing the midi channel won&#39;t have
+        any affect on reading and writing device configuration settings.</p>
+    <h3 id="midi-thru-span-id-midi-thru-">Midi Thru<span id="midi-thru" /></h3>
+    <p>If you&#39;d like to transfer messages from the midi input to the output buffer, check the Midi Thru box. Messages will be transferred no matter what channel they are set to. The messages will be transferred according to the following table:
+    </p>
+    <table>
+        <thead>
+            <tr>
+                <th>Input Port</th>
+                <th>Output Ports</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>UART In</td>
+                <td>UART Out, USB Out</td>
+            </tr>
+            <tr>
+                <td>USB In</td>
+                <td>UART Out</td>
+            </tr>
+        </tbody>
+    </table>
+    <blockquote>
+        <p>To prevent unnecessary loopback, USB is not set in Thru mode.
+            By leaving Midi Thru enabled, it may slow down the device&#39;s responsiveness. If not needed, it is recommended that you leave Midi Thru disabled.</p>
+    </blockquote>
+    <h3 id="global-brightness-span-id-global-brightness-">Global Brightness<span id="global-brightness" /></h3>
+    <p>By default, this setting is set to 50% where the color settings are unaffected. Drag the brightness slider down to lower the overall color intensity or higher to increase and potentially wash out your colors.</p>
+    <h3 id="argb-count-span-id-argb-count-">ARGB Count<span id="argb-count" /></h3>
+    <p>To individually control each LED in an ARGB strip, you will need to predefine the number of LEDs with this setting. You are allowed a maximum of 128 addressable LEDs and a minimum of 1.</p>
+    <h3 id="argb-type-span-id-argb-type-">ARGB Type<span id="argb-type" /></h3>
+    <p>WD2812B is set as the default ARGB controller, but depending on the type of LEDs you are controlling, you may need to change this setting. You can find more information on each chipset type <a
+            href="https://github.com/FastLED/FastLED/wiki/Overview#supported-chipsets">here</a>. More chipset than the provided are supported but will require firmware re-compilation to enable.</p>
+    <h3 id="dmx-span-id-dmx-">DMX<span id="dmx" /></h3>
+    <p>You can control DMX lights simultaneously all on the same channels, but if you&#39;d like to address each DMX light independently, you can use the following settings.</p>
+    <blockquote>
+        <p>It is not currently possible to configure lights independently. It is recommended that you use the same types of RGB lights together to avoid channel overlaps. Independent DMX device configuration may come in a future release.</p>
+    </blockquote>
+    <p>DMX communication is limited to 512 channels. Make sure that your settings don&#39;t exceed 512 channels in total. The calculation to determine the total number of channels is as follows: <code>Count * Channel Size</code>.</p>
+    <h4 id="count-span-id-dmx-count-">Count<span id="dmx-count" /></h4>
+    <p>Specify the number of devices that you&#39;d like to control. You must at least have 1 device accounted for.</p>
+    <h4 id="channel-size-span-id-dmx-channel-size-">Channel Size<span id="dmx-channel-size" /></h4>
+    <p>Specify the number of channels each device will be allocated. You may have to look up the specifications for the device&#39;s DMX utilization. A minimum of 3 channels can be allotted to account for the RGB channels and a maximum of 32 channels
+        per device is allowed.</p>
+    <h4 id="rgb-offset-span-id-dmx-rgb-offset-">RGB Offset<span id="dmx-rgb-offset" /></h4>
+    <p>Your device may have its RGB channels start after the first channel. Pick a value between 1 and 2 less that the total channel size to correct control your specific lights.</p>
+    <blockquote>
+        <p>By default, the order of color channels is <em>RGB</em>. If you need to change this, the firmware will need to be recompiled with a different setting for the <code>DMX_ORDER</code> definition.</p>
+    </blockquote>
+    <h4 id="brightness-span-id-dmx-brightness-">Brightness<span id="dmx-brightness" /></h4>
+    <p>Your DMX lights may have a specific channel used to control the overal brightness of the lights. You can specify the static brightness amount using this slider. By default, the brightness is set at its max of 127.</p>
+    <h4 id="brightness-channel-span-id-dmx-brightness-channel-">Brightness Channel<span id="dmx-brightness-channel" /></h4>
+    <p>If your device has a dedicated brightness channel, you can specify it here as an offset of each device&#39;s first channel. If you leave this setting as 0, the brightness channel will be ignored.</p>
+    <hr>
+    <h2 id="presets-span-id-preset-">Presets<span id="preset" /></h2>
+    <p>The Color Spray has 15 presets available. Each preset contains the same settings which can be configured live with midi control commands. These presets can be loaded when the device boots up, when a midi program change message is received, or
+        when a midi note on message is received if the device is configured to do so.</p>
+    <h3 id="program-number-span-id-preset-program-">Program Number<span id="preset-program" /></h3>
+    <p>If a midi program change message is received, the Color Spray will load up the appropriate preset from 1-15. If the program # is 0, the device will be set to the <code>ColorOff</code> mode. Program #&#39;s from 16+ are reserved for changing
+        color modes dynamically.</p>
+    <p>The assigned index of the preset will be given by the name of the selected preset tab.</p>
+    <h3 id="note-span-id-preset-note-">Note<span id="preset-note" /></h3>
+    <p>By assigning a note value to a preset, the preset can be loaded by sending a midi note on message to the device that matches the assigned pitch. If multiple presets are assigned to the same pitch, the preset whose program number comes first
+        will be loaded.</p>
+    <h3 id="mode-span-id-preset-mode-">Mode<span id="preset-mode" /></h3>
+    <p>By default, each preset is set to the color mode <code>ColorOff</code>. This essentially deactivates the preset and prevents any light from emitting from connected devices. The available modes and their functionality are listed below:</p>
+    <h4 id="solidrgb-span-id-preset-mode-solidrgb-">SolidRGB<span id="preset-mode-solidrgb" /></h4>
+    <p>Set a solid RGB color for all lights to be set. The Red, Green, and Blue settings can be set between 0 and 127 and be controlled using the slider from left to right or by manually typing in your desired value in the number box. Use the preview
+        window to help you find the desired color.</p>
+    <h4 id="solidhsv-span-id-preset-mode-solidhsv-">SolidHSV<span id="preset-mode-solidhsv" /></h4>
+    <p>Set a solid HSV color for all lights to be set. The Hue, Saturation, and Value settings can be set between 0 and 127 and be controlled using the slider from left to right or by manually typing in your desired value in the number box. Use the
+        preview window to help you find the desired color.</p>
+    <h4 id="palette-span-id-preset-palette-">Palette<span id="preset-palette" /></h4>
+    <p>Loop through a pre-defined set of colors at a variable speed. There are 8 palette options available: Cloud, Lava, Ocean, Forest, Rainbow, Rainbow Stripe, Party, and Heat.</p>
+    <h5 id="speed-span-id-preset-palette-speed-">Speed<span id="preset-palette-speed" /></h5>
+    <p>This value defines how fast the lights will rotate through the palette.</p>
+    <hr>
+    <h2 id="saving-loading-json-files-span-id-json-">Saving &amp; Loading JSON Files<span id="json" /></h2>
+    <p>Before writing to the device, it is recommended that you save a backup copy of your settings to a safe location in your drive.</p>
+    <h3 id="saving-a-json-file-span-id-json-save-">Saving a JSON File<span id="json-save" /></h3>
+    <p>Under the <em>File</em> menu in the top left, there is a <em>Save</em> and <em>Load</em> option. By clicking the <em>Save</em> option, it will open up a file prompt for you to select your desired file name and location. After clicking the OK
+        button, a copy of all Config and Presets settings will be saved in the JSON format.</p>
+    <h3 id="loading-a-json-file-span-id-json-load-">Loading a JSON File<span id="json-load" /></h3>
+    <p>If you have a previously saved configurator backup file available, you can load it using the <em>Load</em> option under the <em>File</em> menu in the top left corner of the window. A file prompt should appear where you can select the
+        <code>*.json</code> file which you saved earlier. If an incompatible file is loaded, the program will prompt you that an error occurred and you will need to try again. Backup files saved with previous versions of the configurator software may
+        not be compatible with the current software. When the file has finished loading, all of the controls within the configurator should be updated to show the new settings. If a device is connected, it will not be automatically synchronized in
+        this process.</p>
+    <h3 id="modifying-json-files-span-id-json-modify-">Modifying JSON Files<span id="json-modify" /></h3>
+    <p>If it fits your workflow style, you can modify the Color Spray JSON files outside of the configurator using any plain text editor. As long as the Manufacturer ID, Device ID, and Version settings remain unchanged, the configurator should
+        attempt to load the altered file. It may be possible to affect the program in unforeseen ways, so only attempt this if you are willing to lose your original data and potentially harm the device&#39;s firmware.</p>
+    <hr>
+    <h2 id="reading-writing-to-device-span-id-device-">Reading &amp; Writing to Device<span id="device" /></h2>
+    <p>Communication with the <em>Color Spray</em> occurs over a standard MIDI connection using the Sysex protocol. The device will need to be connected in duplex through either a hardware MIDI interface or with the built-in USB-MIDI interface of the
+        device. A USB connection is highly recommended during this process for it&#39;s ease of use and reliability.</p>
+    <h3 id="selecting-the-device-s-port-span-id-device-port-">Selecting the Device&#39;s Port<span id="device-port" /></h3>
+    <p>A list of all MIDI devices available to your computer will be listed within the <em>Device</em> menu under <em>Ports</em>. If you haven&#39;t yet connected your device, you can do so then select the top item under <em>Ports</em> labeled
+        <em>Refresh</em>. This will disconnect any midi connection you may have activated and refresh the list of available MIDI ports.</p>
+    <p>The USB-MIDI interface of the device should be labeled as <code>Color Spray 32u4</code>. Select this port in the menu to initialize the connection. If there is any issue, you should be prompted of the error.</p>
+    <h3 id="reading-from-the-device-span-id-device-read-">Reading from the Device<span id="device-read" /></h3>
+    <p>Reading all device settings from the <em>Color Spray</em> is very simple. Once you&#39;ve connected to its MIDI port, you&#39;ll need to selected <em>Read</em> under the <em>Device</em> menu. This will check the status and firmware of the
+        device to ensure compatibility then begin to load the global configuration settings and all 15 presets from the device&#39;s memory.</p>
+    <p>If the read completed successfully, all settings within the configurator program will be updated to reflect the settings of the device. If you&#39;d like to make a backup of the devices settings for future use, now would be a great time.</p>
+    <p>If any errors occurred during the process, you should be notified of the exact error which occurred. You may need to attempt the process again or manually reset and reconnect to the device if you continue to have problems.</p>
+    <h3 id="writing-from-the-device-span-id-device-write-">Writing from the Device<span id="device-write" /></h3>
+    <p>Once you are confident with all of your settings and presets and have made any necessary backups, you can write these settings to the device&#39;s memory by selecting <em>Write</em> under the <em>Device</em> menu.</p>
+    <p>This process will work very similarly to the read process but send the data in the opposite direction. If a device isn&#39;t found, your device&#39;s firmware is incompatible, or there are any other unforeseen errors in the process, the
+        operation will cancel and you will be prompted of the error.</p>
+    <p>After the global configuration and all 15 presets have been written to the device&#39;s memory, a reset command will be automatically sent to the device for it to use the new settings and reinitialize any connected addressable lighting
+        devices.</p>
+    <h3 id="software-reset-span-id-device-reset-">Software Reset<span id="device-reset" /></h3>
+    <p>For any reason if you&#39;d like to manually reset the device&#39;s software, you can do so using the <em>Reset</em> option under the <em>Device</em> menu. This will not perform a hardware reset to the device but instead reload any stored
+        settings and reinitialize the device&#39;s configuration.</p>
+    <p>If you&#39;d like to perform a hardware reset which may be necessary to resolve some issues, you can do so either by powering off and powering on the device or by pressing the internal reset button which may require disassembly.</p>
+    <hr>
+    <h2 id="software-dependencies-span-id-dependencies-">Software Dependencies<span id="dependencies" /></h2>
+    <p>In order to run the configurator too, you will need Python 3.0+ and a few pip packages. After you&#39;ve resolved all dependencies, run the program using <code>python configurator.py</code>.</p>
+    <h3 id="linux-ubuntu-debian-span-id-dependencies-linux-">Linux (Ubuntu/Debian)<span id="dependencies-linux" /></h3>
+    <pre><code>sudo apt-<span class="hljs-built_in">get</span> <span class="hljs-keyword">update</span>
+sudo apt-<span class="hljs-built_in">get</span> install <span class="hljs-keyword">python3</span> <span class="hljs-keyword">python3</span>-pip <span class="hljs-keyword">python3</span>-<span class="hljs-keyword">is</span>-<span class="hljs-keyword">python</span>
+pip install tkinter <span class="hljs-keyword">python</span>-rtmidi tkinterweb
+</code></pre>
+    <h3 id="windows-span-id-dependencies-windows-">Windows<span id="dependencies-windows" /></h3>
+    <p>Download and install the latest version of Python 3.0+ <a href="https://www.python.org/downloads/windows/">here</a>. PIP should be installed by default since Python 3.4. Within the command line, run the following command to install all
+        dependencies: <code>python -m pip install tkinter python-rtmidi tkinterweb</code>.</p>
+    <h3 id="packages-span-id-dependencies-packages-">Packages<span id="dependencies-packages" /></h3>
+    <ul>
+        <li><a href="https://github.com/SpotlightKid/python-rtmidi">pyython-rtmidi</a></li>
+        <li><a href="https://github.com/Andereoo/TkinterWeb/">tkinterweb</a></li>
+        <li><a href="https://github.com/muhammeteminturgut/ttkScrollableNotebook">ttkScrollableNotebook</a> <em>(included within repository)</em></li>
+    </ul>
+</body>
+
+</html>

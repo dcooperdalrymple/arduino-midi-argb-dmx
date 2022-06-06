@@ -161,7 +161,7 @@ In order to run the configurator too, you will need Python 3.0+ and a few pip pa
 ```
 sudo apt-get update
 sudo apt-get install python3 python3-pip python3-is-python
-pip install tkinter python-rtmidi tkinterweb markdown
+pip install tkinter python-rtmidi tkinterweb
 ```
 
 ### Windows<span id="dependencies-windows" />
@@ -170,5 +170,4 @@ Download and install the latest version of Python 3.0+ [here](https://www.python
 ### Packages<span id="dependencies-packages" />
 * [pyython-rtmidi](https://github.com/SpotlightKid/python-rtmidi)
 * [tkinterweb](https://github.com/Andereoo/TkinterWeb/)
-* [Markdown](https://github.com/Python-Markdown/markdown/)
 * [ttkScrollableNotebook](https://github.com/muhammeteminturgut/ttkScrollableNotebook) _(included within repository)_
