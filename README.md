@@ -15,6 +15,11 @@ The device's configuration is stored within the internal EEPROM memory of the At
 
 A python-based configurator GUI program is provided to help read, backup, and write device configuration to the Color Spray. The program can be run after installing all [dependencies](configurator/manual.md#dependencies) by running `python configurator/configurator.py` from the root directory of the repository. More information is provided in the [manual](configurator/manual.md).
 
+<p float="left">
+    <a href="img/configurator-1.png" title="Color Spray Configurator Config Panel"><img src="img/configurator-1.png" alt="Color Spray Configurator Config Panel" width="49%" /></a>
+    <a href="img/configurator-2.png" title="Color Spray Configurator Preset Panel"><img src="img/configurator-2.png" alt="Color Spray Configurator Preset Panel" width="49%" /></a>
+</p>
+
 ## MIDI Implementation
 
 ### Configuration
