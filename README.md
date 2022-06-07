@@ -41,9 +41,12 @@ Some software-based Midi Thru functionality is included, but not all message typ
 | Program | Description   |
 | ------- | ------------- |
 | 0       | Off           |
-| 1       | Solid RGB     |
-| 2       | Solid HSV     |
-| 3       | Palette Cycle |
+| 1-15    | Load Preset # |
+| 16      | Solid RGB     |
+| 17      | Solid HSV     |
+| 18      | Palette Cycle |
+| 19      | Chase RGB     |
+| 20      | Chase HSV     |
 
 ### Control Change
 

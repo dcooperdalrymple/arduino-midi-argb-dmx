@@ -485,8 +485,15 @@ void controlChange(byte channel, byte control, byte value) {
 void programChange(byte channel, byte program) {
     if (settings.getMidiChannel() > 0 && channel != settings.getMidiChannel() - 1) return;
 
-    if (program < COLOR_MODES) {
-        current_preset.mode = (ColorMode)program;
+    if (program == 0) {
+        current_preset.mode = ColorOff;
+    } else if (program < 1 + PRESET_COUNT) {
+        loadPreset(program - 1);
+    } else if (program < 1 + PRESET_COUNT + COLOR_MODES - 1) {
+        current_preset.mode = (ColorMode)(program - 1 - PRESET_COUNT + 1);
+    }
+
+    if (program < PRESET_COUNT + COLOR_MODES) {
         triggerLed();
         updatePalette();
     }
