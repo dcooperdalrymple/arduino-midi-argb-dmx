@@ -18,7 +18,7 @@ import webbrowser
 
 from sysex import ColorSpraySysex, MANUFACTURER_ID, DEVICE_ID
 
-SETTINGS_VERSION        = 2
+SETTINGS_VERSION        = 3
 PRESET_COUNT            = 15
 
 root = Tk()
@@ -59,6 +59,8 @@ class ColorMode(Enum):
     SolidRgb    = 1
     SolidHsv    = 2
     Palette     = 3
+    ChaseRgb    = 4
+    ChaseHsv    = 5
 
 class ArgbType(Enum):
     NONE        = 0
@@ -185,6 +187,20 @@ def build_number(parent, text, var, from_, to, default, callback):
     number.pack(fill="x")
     var.set(default)
     return frame, number
+
+def build_number_slider(parent, text, var, from_, to, default, callback):
+    frame = ttk.Frame(parent, borderwidth=1, padding=5)
+    frame.pack(fill="x")
+    label = ttk.Label(frame, text=text, padding=(0, 0, 5, 0))
+    label.pack(fill="x", expand=True)
+    slider_frame = ttk.Frame(frame, borderwidth=0, padding=(5, 0, 5, 0))
+    slider_frame.pack(side="left", fill="x", expand=True)
+    slider = ttk.Scale(slider_frame, from_=from_, to=to, orient="horizontal", variable=var, command=callback)
+    slider.pack(expand=True, fill="x")
+    number = ttk.Spinbox(frame, from_=from_, to=to, textvariable=var, command=callback, wrap=False)
+    number.pack(side="right")
+    var.set(default)
+    return frame, slider, number
 
 def build_color_slider(parent, text, var, callback, default=0):
     frame = ttk.Frame(parent, borderwidth=1, padding=5)
@@ -366,7 +382,7 @@ class SettingsData:
             self.preset_var.set("Preset #{}".format(self.preset))
 
 class PresetData:
-    data_keys = ["note", "mode", "palette", "palette_speed", "color_rgb_r", "color_rgb_g", "color_rgb_b", "color_hsv_h", "color_hsv_s", "color_hsv_v"]
+    data_keys = ["note", "mode", "palette", "palette_speed", "color_rgb_r", "color_rgb_g", "color_rgb_b", "color_hsv_h", "color_hsv_s", "color_hsv_v", "chase_count"]
     def __init__(self, index):
         self.index = index
         self.note = 0
@@ -375,6 +391,7 @@ class PresetData:
         self.palette_speed = 1.0
         self.color_rgb = ColorRGB(0, 0, 0)
         self.color_hsv = ColorHSV(0, 0, 0)
+        self.chase_count = 1
     def getData(self, flat=False):
         if not flat:
             return {
@@ -383,7 +400,8 @@ class PresetData:
                 'palette': self.palette.value,
                 'palette_speed': int(self.palette_speed * 32.0),
                 'color_rgb': self.color_rgb.getData(),
-                'color_hsv': self.color_hsv.getData()
+                'color_hsv': self.color_hsv.getData(),
+                'chase_count': self.chase_count
             }
         else:
             return {
@@ -396,7 +414,8 @@ class PresetData:
                 'color_rgb_b': self.color_rgb.b,
                 'color_hsv_h': self.color_hsv.h,
                 'color_hsv_s': self.color_hsv.s,
-                'color_hsv_v': self.color_hsv.v
+                'color_hsv_v': self.color_hsv.v,
+                'chase_count': self.chase_count
             }
 
     def setData(self, data):
@@ -426,6 +445,8 @@ class PresetData:
                 self.color_hsv.s = data['color_hsv_s']
             if 'color_hsv_v' in data:
                 self.color_hsv.v = data['color_hsv_v']
+        if 'chase_count' in data:
+            self.chase_count = int(data['chase_count'])
         self.updateVars()
         self.updateVisibility()
         self.updateColorRGB()
@@ -439,7 +460,7 @@ class PresetData:
         self.frame.pack(fill="both", expand=True)
 
         self.note_var = StringVar()
-        build_combobox(self.frame, "Midi Note", self.note_var, ["None"] + [self.getNoteName(i) for i in range(21, 128)], "None", self.updateNote)
+        build_combobox(self.frame, "Midi Note", self.note_var, ["None"] + [self.getNoteName(i) for i in range(1, 128)], "None", self.updateNote)
 
         self.mode_var = StringVar()
         build_combobox(self.frame, "Mode", self.mode_var, [name for name, value in vars(ColorMode).items() if not name.startswith("_")], self.mode.name, self.updateMode)
@@ -447,9 +468,9 @@ class PresetData:
         self.palette_row = ttk.Frame(self.frame)
         self.palette_row.pack(fill="x")
         self.palette_var = StringVar()
-        build_combobox(self.palette_row, "Palette", self.palette_var, [name.replace("_", " ") for name, value in vars(Palette).items() if not name.startswith("_")], self.palette.name, self.updatePalette)
+        self.palette_frame, palette_combo = build_combobox(self.palette_row, "Palette", self.palette_var, [name.replace("_", " ") for name, value in vars(Palette).items() if not name.startswith("_")], self.palette.name, self.updatePalette)
         self.palette_speed_var = IntVar()
-        build_slider(self.palette_row, "Speed", self.palette_speed_var, 0, 127, int(self.palette_speed * 32.0), self.updatePaletteSpeed)
+        self.palette_speed_frame, palette_speed_slider = build_slider(self.palette_row, "Speed", self.palette_speed_var, 0, 127, int(self.palette_speed * 32.0), self.updatePaletteSpeed)
 
         self.color_frame = ttk.Frame(self.frame, borderwidth=1, padding=5)
         self.color_frame.pack(fill="x")
@@ -480,11 +501,17 @@ class PresetData:
         self.color_v_var = StringVar()
         build_color_slider(color_hsv_frame, "V", self.color_v_var, self.updateColorV)
 
+        self.chase_count_var = StringVar()
+        self.chase_count_frame, chase_count_slider, chase_count_number = build_number_slider(self.frame, "Count", self.chase_count_var, 1, 8, self.chase_count, self.updateChaseCount)
+
         self.updateVisibility()
         return self.frame
     note_names = ["C{0}", "C#{0}/Db{0}", "D{0}", "D#{0}/Eb{0}", "E{0}", "F{0}", "F#{0}/Gb{0}", "G{0}", "G#{0}/Ab{0}", "A{0}", "A#{0}/Bb{0}", "B{0}"]
     def getNoteName(self, i):
-        return "{} ({})".format(i, self.note_names[i % 12].format(math.floor(i / 12) - 1))
+        if i >= 21:
+            return "{} ({})".format(i, self.note_names[i % 12].format(math.floor(i / 12) - 1))
+        else:
+            return "{}".format(i)
     def updateNote(self, event):
         if self.note_var.get() == "None":
             self.note = 0
@@ -536,6 +563,9 @@ class PresetData:
         r,g,b = colorsys.hsv_to_rgb(self.color_hsv.h / 127.0, self.color_hsv.s / 127.0, self.color_hsv.v / 127.0)
         hex = "#{:02X}{:02X}{:02X}".format(int(r * 255), int(g * 255), int(b * 255))
         self.color_hsv_preview.configure(bg=hex)
+    def updateChaseCount(self, event=False):
+        self.chase_count_var.set(str(int(float(self.chase_count_var.get()))))
+        self.chase_count = int(math.floor(float(self.chase_count_var.get())))
     def updateVars(self):
         if self.note == 0:
             self.note_var.set("None")
@@ -550,11 +580,15 @@ class PresetData:
         self.color_h_var.set(str(int(float(self.color_hsv.h))))
         self.color_s_var.set(str(int(float(self.color_hsv.s))))
         self.color_v_var.set(str(int(float(self.color_hsv.v))))
+        self.chase_count_var.set(str(int(float(self.chase_count))))
     def updateVisibility(self):
         self.palette_row.pack_forget()
+        self.palette_frame.pack_forget()
+        self.palette_speed_frame.pack_forget()
         self.color_frame.pack_forget()
         self.color_rgb_row.pack_forget()
         self.color_hsv_row.pack_forget()
+        self.chase_count_frame.pack_forget()
         if self.mode == ColorMode.SolidRgb:
             self.color_frame.pack(fill="x")
             self.color_rgb_row.pack(fill="x")
@@ -563,6 +597,20 @@ class PresetData:
             self.color_hsv_row.pack(fill="x")
         elif self.mode == ColorMode.Palette:
             self.palette_row.pack(fill="x")
+            self.palette_frame.pack(fill="x")
+            self.palette_speed_frame.pack(fill="x")
+        elif self.mode == ColorMode.ChaseRgb:
+            self.color_frame.pack(fill="x")
+            self.color_rgb_row.pack(fill="x")
+            self.chase_count_frame.pack(fill="x")
+            self.palette_row.pack(fill="x")
+            self.palette_speed_frame.pack(fill="x")
+        elif self.mode == ColorMode.ChaseHsv:
+            self.color_frame.pack(fill="x")
+            self.color_hsv_row.pack(fill="x")
+            self.chase_count_frame.pack(fill="x")
+            self.palette_row.pack(fill="x")
+            self.palette_speed_frame.pack(fill="x")
 
 class Settings:
     def __init__(self):
@@ -883,3 +931,5 @@ mainmenu.add_cascade(label = "Help", menu = helpmenu)
 
 root.config(menu = mainmenu)
 root.mainloop()
+
+sysex.disconnect()

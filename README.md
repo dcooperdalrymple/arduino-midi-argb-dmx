@@ -49,16 +49,17 @@ Some software-based Midi Thru functionality is included, but not all message typ
 
 Control change messages are generally allocated to different General Purpose Controller functions and are separated for each program mode.
 
-| Control | Function   | Value (0-127, scaled)    | Program       |
-| ------- | ---------- | ------------------------ | ------------- |
-| 12      | Palette    | _See Available Palettes_ | Palette Cycle |
-| 13      | Speed      | 0-4                      | Palette Cycle |
-| 16      | Red        | 0-254                    | Solid RGB     |
-| 17      | Green      | 0-254                    | Solid RGB     |
-| 18      | Blue       | 0-254                    | Solid RGB     |
-| 80      | Hue        | 0-254                    | Solid HSV     |
-| 81      | Saturation | 0-254                    | Solid HSV     |
-| 82      | Value      | 0-254                    | Solid HSV     |
+| Control | Function   | Value (0-127, scaled)    | Program               |
+| ------- | ---------- | ------------------------ | --------------------- |
+| 12      | Palette    | _See Available Palettes_ | Palette Cycle         |
+| 13      | Speed      | 0-4                      | Palette Cycle & Chase |
+| 16      | Red        | 0-254                    | Solid RGB & Chase RGB |
+| 17      | Green      | 0-254                    | Solid RGB & Chase RGB |
+| 18      | Blue       | 0-254                    | Solid RGB & Chase RGB |
+| 80      | Hue        | 0-254                    | Solid HSV & Chase HSV |
+| 81      | Saturation | 0-254                    | Solid HSV & Chase HSV |
+| 82      | Value      | 0-254                    | Solid HSV & Chase HSV |
+| 83      | Count      | 1-8                      | Chase RGB & Chase HSV |
 
 #### Palettes
 

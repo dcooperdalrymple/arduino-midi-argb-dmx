@@ -1,7 +1,7 @@
 desc:Color Spray
 
 slider1:channel=8<0,15,1{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16}>MIDI Channel
-slider2:mode=1<0,3,1{Off,RGB,HSV,Palette}>Color Mode
+slider2:mode=1<0,5,1{Off,RGB,HSV,Palette,ChaseRgb,ChaseHsv}>Color Mode
 
 slider3:palette=0<0,7,1{Cloud,Lava,Ocean,Forest,Rainbow,Rainbow Stripe,Party,Heat}>Palette
 slider4:speed=1<0,3.96875,0.03125>Speed
@@ -13,6 +13,8 @@ slider7:b=0<0,127,1>B
 slider8:h=0<0,127,1>H
 slider9:s=0<0,127,1>S
 slider10:v=0<0,127,1>V
+
+slider11:count=1<1,8,1>Count
 
 @init
 pcbyte = $xc0;
@@ -28,6 +30,7 @@ curB = -1;
 curH = -1;
 curS = -1;
 curV = -1;
+curCount = -1;
 
 prevMode = -1;
 prevPalette = -1;
@@ -38,6 +41,7 @@ prevB = -1;
 prevH = -1;
 prevS = -1;
 prevV = -1;
+prevCount = -1;
 
 function maybeSendPC(chan, cur, prev)
 (
@@ -53,7 +57,7 @@ function maybeSendCC(chan, ctrl, cur, prev)
 
 @slider
 curChannel = channel;
-curMode = mode;
+curMode = mode > 0 ? mode + 15 : mode;
 curPalette = palette;
 curSpeed = speed;
 curR = r;
@@ -62,6 +66,7 @@ curB = b;
 curH = h;
 curS = s;
 curV = v;
+curCount = count;
 
 @block
 prevMode = maybeSendPC(curChannel, curMode, prevMode);
@@ -76,3 +81,5 @@ prevB = maybeSendCC(curChannel, 18, curB, prevB);
 prevH = maybeSendCC(curChannel, 80, curH, prevH);
 prevS = maybeSendCC(curChannel, 81, curS, prevS);
 prevV = maybeSendCC(curChannel, 82, curV, prevV);
+
+prevCount = maybeSendCC(curChannel, 83, (curCount - 1) * 127 / 7, prevCount);

@@ -103,11 +103,14 @@ Set a solid RGB color for all lights to be set. The Red, Green, and Blue setting
 #### SolidHSV<span id="preset-mode-solidhsv" />
 Set a solid HSV color for all lights to be set. The Hue, Saturation, and Value settings can be set between 0 and 127 and be controlled using the slider from left to right or by manually typing in your desired value in the number box. Use the preview window to help you find the desired color.
 
-#### Palette<span id="preset-palette" />
-Loop through a pre-defined set of colors at a variable speed. There are 8 palette options available: Cloud, Lava, Ocean, Forest, Rainbow, Rainbow Stripe, Party, and Heat.
+#### Palette<span id="preset-mode-palette" />
+Loop through a pre-defined set of colors at a variable speed. There are 8 palette options available: Cloud, Lava, Ocean, Forest, Rainbow, Rainbow Stripe, Party, and Heat. A speed value is provided to define how fast the lights will rotate through the palette.
 
-##### Speed<span id="preset-palette-speed" />
-This value defines how fast the lights will rotate through the palette.
+#### ChaseRGB<span id="preset-mode-chasergb" />
+Rotate a solid RGB color around all available addressable lights in a "Chase" manner. You can control the desired _color_ using the SolidRGB settings, the _speed_ of the rotation, and the number of chase lights, _count_ (essentially the gap between the selected color).
+
+#### ChaseHSV<span id="preset-mode-chasehsv" />
+Rotate a solid HSV color around all available addressable lights in a "Chase" manner. You can control the desired _color_ using the SolidHSV settings, the _speed_ of the rotation, and the number of chase lights, _count_ (essentially the gap between the selected color).
 
 ---
 

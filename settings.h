@@ -9,7 +9,7 @@
 #include "sysex.h"
 #include "preset.h"
 
-#define SETTINGS_VERSION    2
+#define SETTINGS_VERSION    3
 #define SETTINGS_OFFSET     0x03
 #define PRESET_OFFSET       0x10
 #define PRESET_SIZE         0x10

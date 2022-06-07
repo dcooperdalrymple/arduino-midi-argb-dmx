@@ -12,6 +12,7 @@ typedef struct _PresetData {
     uint8_t palette_speed;
     CRGB color_rgb;
     CHSV color_hsv;
+    uint8_t chase_count;
 } PresetData;
 
 const PROGMEM PresetData default_preset = {
@@ -20,7 +21,8 @@ const PROGMEM PresetData default_preset = {
     .palette = 0,
     .palette_speed = 32,
     .color_rgb = CRGB::Black,
-    .color_hsv = CHSV(0, 0, 0)
+    .color_hsv = CHSV(0, 0, 0),
+    .chase_count = 1
 };
 
 #endif

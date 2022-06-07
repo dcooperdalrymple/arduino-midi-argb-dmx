@@ -5,8 +5,10 @@ enum ColorMode : uint8_t {
     ColorOff,
     SolidRgb,
     SolidHsv,
-    Palette
+    Palette,
+    ChaseRgb,
+    ChaseHsv
 };
-#define COLOR_MODES 4
+#define COLOR_MODES 6
 
 #endif

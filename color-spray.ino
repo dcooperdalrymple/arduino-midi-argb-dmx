@@ -64,6 +64,7 @@ uint8_t modDmx = 1;
 #define PALETTE_UPDATE  1
 #define PALETTE_CHANGES 48
 #define PALETTE_ITERS   1
+#define PALETTE_MAX     16
 
 PresetData current_preset = default_preset;
 CRGBPalette16 current_palette(CRGB::Black);
@@ -391,6 +392,24 @@ void updatePalette() {
         case Palette:
             target_palette = *palettes[current_preset.palette];
             break;
+        case ChaseRgb:
+        case ChaseHsv:
+            CRGB *entries = new CRGB[PALETTE_MAX];
+            for (uint8_t i = 0; i < PALETTE_MAX; i++) {
+                entries[i] = CRGB::Black;
+            }
+            uint8_t count = constrain(current_preset.chase_count, 1, 8);
+            uint8_t step = PALETTE_MAX / count;
+            for (uint8_t i = 0; i < PALETTE_MAX; i += step) {
+                if (current_preset.mode == ChaseRgb) {
+                    entries[i] = current_preset.color_rgb;
+                } else {
+                    entries[i] = current_preset.color_hsv;
+                }
+            }
+            target_palette = CRGBPalette16(entries);
+            delete entries;
+            break;
     }
 }
 
@@ -447,6 +466,14 @@ void controlChange(byte channel, byte control, byte value) {
             updated = true;
             break;
 
+        // Chase Controls
+        case 83:
+            current_preset.chase_count = map(value, 0, 127, 0, 7);
+            if (current_preset.chase_count > 7) current_preset.chase_count = 7;
+            current_preset.chase_count++;
+            updated = true;
+            break;
+
     }
 
     if (updated) {
@@ -471,8 +498,8 @@ void noteOn(byte channel, byte note, byte velocity) {
 
     for (uint8_t i = 0; i < PRESET_COUNT; i++) {
         if (settings.getPresetData(i)->note == note) {
-            triggerLed();
             loadPreset(i);
+            triggerLed();
             break;
         }
     }
