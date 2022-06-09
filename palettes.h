@@ -3,7 +3,7 @@
 
 #include <FastLED.h>
 
-const TProgmemRGBPalette16 *palettes[] = {
+extern const TProgmemRGBPalette16* palettes[] = {
     &CloudColors_p,
     &LavaColors_p,
     &OceanColors_p,
@@ -13,6 +13,6 @@ const TProgmemRGBPalette16 *palettes[] = {
     &PartyColors_p,
     &HeatColors_p
 };
-const uint8_t palette_count = sizeof(palettes) / sizeof(TProgmemRGBGradientPalettePtr);
+#define PALETTE_COUNT sizeof(palettes) / sizeof(TProgmemRGBGradientPalettePtr)
 
 #endif

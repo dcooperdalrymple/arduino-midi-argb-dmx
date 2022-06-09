@@ -45,14 +45,18 @@ MIDI_CREATE_CUSTOM_INSTANCE(HardwareSerial, Serial1, MIDICoreSerial, CustomMidiS
 
 #define ARGB_PIN        2
 #define ARGB_ORDER      GRB
-CRGB *argbLights;
-static CLEDController *argbController;
+#define ARGB_TYPE       WS2812B
+#define ARGB_MAX        120
+static CRGB argbLights[ARGB_MAX];
+static ARGB_TYPE<ARGB_PIN, ARGB_ORDER> argbController;
+// static ARGB_TYPE<ARGB_PIN> argbController; // For NEOPIXEL
 uint8_t modArgb = 1;
 
 #define DMX_PIN         7
 #define DMX_ORDER       RGB
-CRGB *dmxLights;
-static DMXSIMPLE<DMX_PIN, DMX_ORDER> *dmxController;
+#define DMX_MAX         32
+static CRGB dmxLights[DMX_MAX];
+static DMXSIMPLE<DMX_PIN, DMX_ORDER> dmxController;
 uint8_t modDmx = 1;
 
 #define RGB_R           9
@@ -139,156 +143,59 @@ void configure() {
     unsigned long usb_start = millis();
     while (!Serial && millis() - usb_start < USB_TIMEOUT) { }
     if (Serial) {
-        Serial.println("Color Spray - Version 1.0 - 2022 Cooper Dalrymple");
+        Serial.println(F("Color Spray - Version 1.0 - 2022 Cooper Dalrymple"));
 
-        Serial.print("Midi Thru: ");
-        if (settings.getMidiThru()) {
-            Serial.print("On");
+        Serial.print(F("Midi Thru: "));
+        if (settings.data.midiThru) {
+            Serial.print(F("On"));
         } else {
-            Serial.print("Off");
+            Serial.print(F("Off"));
         }
         Serial.println();
 
-        Serial.print("Midi Channel: ");
-        if (settings.getMidiChannel() > 0) {
-            Serial.print(settings.getMidiChannel());
+        Serial.print(F("Midi Channel: "));
+        if (settings.data.midiChannel > 0) {
+            Serial.print(settings.data.midiChannel);
         } else {
-            Serial.print("Omni");
+            Serial.print(F("Omni"));
         }
         Serial.println();
     }
     #endif
 
-    if (settings.getMidiThru()) {
+    if (settings.data.midiThru) {
         MIDICoreSerial.turnThruOn();
     } else {
         MIDICoreSerial.turnThruOff();
     }
 
-    if (!firstConfigure) {
-        argbController->setLeds(NULL, 0);
-        delete argbLights;
-    }
-    argbLights = new CRGB[settings.getArgbCount()];
-    modArgb = max(floor((float)settings.getDmxCount() / (float)settings.getArgbCount()), 1);
     if (firstConfigure) {
-        switch (settings.getArgbType()) {
-            case FLTYPE_NEOPIXEL:
-                argbController = new NEOPIXEL<ARGB_PIN>;
-                break;
-            case FLTYPE_SM16703:
-                //argbController = new SM16703<ARGB_PIN, ARGB_ORDER>;
-                break;
-            case FLTYPE_TM1829:
-                //argbController = new TM1829<ARGB_PIN, ARGB_ORDER>;
-                break;
-            case FLTYPE_TM1812:
-                //argbController = new TM1812<ARGB_PIN, ARGB_ORDER>;
-                break;
-            case FLTYPE_TM1809:
-                argbController = new TM1809<ARGB_PIN, ARGB_ORDER>;
-                break;
-            case FLTYPE_TM1804:
-                argbController = new TM1804<ARGB_PIN, ARGB_ORDER>;
-                break;
-            case FLTYPE_TM1803:
-                argbController = new TM1803<ARGB_PIN, ARGB_ORDER>;
-                break;
-            case FLTYPE_UCS1903:
-                argbController = new UCS1903<ARGB_PIN, ARGB_ORDER>;
-                break;
-            case FLTYPE_UCS1903B:
-                //argbController = new UCS1903B<ARGB_PIN, ARGB_ORDER>;
-                break;
-            case FLTYPE_UCS1904:
-                //argbController = new UCS1904<ARGB_PIN, ARGB_ORDER>;
-                break;
-            case FLTYPE_UCS2903:
-                //argbController = new UCS2903<ARGB_PIN, ARGB_ORDER>;
-                break;
-            case FLTYPE_WS2812:
-                argbController = new WS2812<ARGB_PIN, ARGB_ORDER>;
-                break;
-            case FLTYPE_WS2852:
-                //argbController = new WS2852<ARGB_PIN, ARGB_ORDER>;
-                break;
-            case FLTYPE_WS2812B:
-                argbController = new WS2812B<ARGB_PIN, ARGB_ORDER>;
-                break;
-            case FLTYPE_GS1903:
-                //argbController = new GS1903<ARGB_PIN, ARGB_ORDER>;
-                break;
-            case FLTYPE_SK6812:
-                //argbController = new SK6812<ARGB_PIN, ARGB_ORDER>;
-                break;
-            case FLTYPE_SK6822:
-                //argbController = new SK6822<ARGB_PIN, ARGB_ORDER>;
-                break;
-            case FLTYPE_APA106:
-                //argbController = new APA106<ARGB_PIN, ARGB_ORDER>;
-                break;
-            case FLTYPE_PL9823:
-                //argbController = new PL9823<ARGB_PIN, ARGB_ORDER>;
-                break;
-            case FLTYPE_WS2811:
-                argbController = new WS2811<ARGB_PIN, ARGB_ORDER>;
-                break;
-            case FLTYPE_WS2813:
-                argbController = new WS2813<ARGB_PIN, ARGB_ORDER>;
-                break;
-            case FLTYPE_APA104:
-                //argbController = new APA104<ARGB_PIN, ARGB_ORDER>;
-                break;
-            case FLTYPE_WS2811_400:
-                //argbController = new WS2811_400<ARGB_PIN, ARGB_ORDER>;
-                break;
-            case FLTYPE_GE8822:
-                //argbController = new GE8822<ARGB_PIN, ARGB_ORDER>;
-                break;
-            case FLTYPE_GW6205:
-                ///argbController = new GW6205<ARGB_PIN, ARGB_ORDER>;
-                break;
-            case FLTYPE_GW6205_400:
-                //argbController = new GW6205_400<ARGB_PIN, ARGB_ORDER>;
-                break;
-            case FLTYPE_LPD1886:
-                //argbController = new LPD1886<ARGB_PIN, ARGB_ORDER>;
-                break;
-            case FLTYPE_LPD1886_8BIT:
-                ///argbController = new LPD1886_8BIT<ARGB_PIN, ARGB_ORDER>;
-                break;
-            case FLTYPE_NONE:
-            default:
-                break;
-        }
-        FastLED.addLeds(argbController, argbLights, settings.getArgbCount()).setCorrection(TypicalLEDStrip);
+        argbController.init();
+        argbController.setCorrection(TypicalLEDStrip);
+    }
+    if (settings.data.argbCount > 0) {
+        modArgb = max(floor((float)min(settings.data.dmxCount, DMX_MAX) / (float)min(settings.data.argbCount, ARGB_MAX)), 1);
+        argbController.setLeds(argbLights, min(settings.data.argbCount, ARGB_MAX));
     } else {
-        argbController->setLeds(argbLights, settings.getArgbCount());
+        argbController.setLeds(NULL, 0);
     }
 
-
-    if (!firstConfigure) {
-        dmxController->setLeds(NULL, 0);
-        delete dmxLights;
-    }
-    dmxLights = new CRGB[settings.getDmxCount()];
-    modDmx = max(floor((float)settings.getArgbCount() / (float)settings.getDmxCount()), 1);
     if (firstConfigure) {
-        dmxController = new DMXSIMPLE<DMX_PIN, DMX_ORDER>;
-        FastLED.addLeds(dmxController, dmxLights, settings.getDmxCount());
-    } else {
-        dmxController->setLeds(dmxLights, settings.getDmxCount());
+        dmxController.init();
+        dmxController.assign(&settings);
     }
-    dmxController->setChannelSize(settings.getDmxChannelSize());
-    dmxController->setChannelOffset(settings.getDmxChannelOffset());
-    dmxController->setBrightness(settings.getDmxBrightness());
-    dmxController->setBrightnessChannel(settings.getDmxBrightnessChannel());
-    //dmxController->setMaxChannel(settings.getDmxCount() * settings.getDmxChannelSize());
+    if (settings.data.dmxCount > 0) {
+        modDmx = max(floor((float)min(settings.data.argbCount, ARGB_MAX) / (float)min(settings.data.dmxCount, DMX_MAX)), 1);
+        dmxController.setLeds(dmxLights, min(settings.data.dmxCount, DMX_MAX));
+    } else {
+        dmxController.setLeds(NULL, 0);
+    }
+    dmxController.update();
 
-    FastLED.setBrightness(settings.getBrightness());
+    FastLED.setBrightness(settings.data.brightness);
 
-    if (settings.getPreset() > 0) {
-        loadPreset(settings.getPreset() - 1);
+    if (settings.data.preset > 0) {
+        loadPreset(settings.data.preset - 1);
     }
 
     firstConfigure = false;
@@ -371,11 +278,11 @@ void FillLEDsFromPaletteColors(uint8_t index) {
 
     uint8_t iArgb = 1;
     uint8_t iDmx = 1;
-    for (int i = 1; i < max(settings.getArgbCount(), settings.getDmxCount()); i++) {
+    for (int i = 1; i < max(min(settings.data.argbCount, ARGB_MAX), min(settings.data.dmxCount, DMX_MAX)); i++) {
         index += 3;
         c = ColorFromPalette(current_palette, index, brightness, blending);
-        if (i % modArgb == 0 && iArgb < settings.getArgbCount()) argbLights[iArgb++] = c;
-        if (i % modDmx == 0 && iDmx < settings.getDmxCount()) dmxLights[iDmx++] = c;
+        if (i % modArgb == 0 && iArgb < min(settings.data.argbCount, ARGB_MAX)) argbLights[iArgb++] = c;
+        if (i % modDmx == 0 && iDmx < min(settings.data.dmxCount, DMX_MAX)) dmxLights[iDmx++] = c;
     }
 }
 
@@ -422,15 +329,15 @@ void loadPreset(uint8_t i) {
 
 bool updated = false;
 void controlChange(byte channel, byte control, byte value) {
-    if (settings.getMidiChannel() > 0 && channel != settings.getMidiChannel() - 1) return;
+    if (settings.data.midiChannel > 0 && channel != settings.data.midiChannel - 1) return;
 
     updated = false;
     switch (control) {
 
         // Palette Controls (Effect Controller 1-2)
         case 12:
-            current_preset.palette = map(value, 0, 127, 0, palette_count);
-            if (current_preset.palette >= palette_count) current_preset.palette = palette_count - 1;
+            current_preset.palette = map(value, 0, 127, 0, PALETTE_COUNT);
+            if (current_preset.palette >= PALETTE_COUNT) current_preset.palette = PALETTE_COUNT - 1;
             updated = true;
             break;
         case 13:
@@ -483,7 +390,7 @@ void controlChange(byte channel, byte control, byte value) {
 }
 
 void programChange(byte channel, byte program) {
-    if (settings.getMidiChannel() > 0 && channel != settings.getMidiChannel() - 1) return;
+    if (settings.data.midiChannel > 0 && channel != settings.data.midiChannel - 1) return;
 
     if (program == 0) {
         current_preset.mode = ColorOff;
@@ -500,11 +407,11 @@ void programChange(byte channel, byte program) {
 }
 
 void noteOn(byte channel, byte note, byte velocity) {
-    if (settings.getMidiChannel() > 0 && channel != settings.getMidiChannel() - 1) return;
+    if (settings.data.midiChannel > 0 && channel != settings.data.midiChannel - 1) return;
     if (velocity == 0) return;
 
     for (uint8_t i = 0; i < PRESET_COUNT; i++) {
-        if (settings.getPresetData(i)->note == note) {
+        if (settings.presets[i].note == note) {
             loadPreset(i);
             triggerLed();
             break;
@@ -518,15 +425,17 @@ void systemExclusive(byte* data, unsigned size) {
     #if USB_MIDI
     #else
     if (Serial) {
-        Serial.print("Sysex Message Received (");
+
+        Serial.print(F("Sysex Message Received ("));
         Serial.print(size);
-        Serial.println(" bytes in total):");
+        Serial.println(F(" bytes in total):"));
         if (valid) {
-            Serial.println("Message is Valid");
+            Serial.print(F("Message is Valid"));
         } else {
-            Serial.println("Invalid Message");
+            Serial.print(F("Invalid Message"));
         }
-        Serial.println("Message Contents:");
+        Serial.println();
+        Serial.println(F("Message Contents:"));
         for (uint8_t i = 0; i < size; i++) {
             Serial.print("0x");
             Serial.print(data[i], HEX);

@@ -1,58 +1,14 @@
 #include "settings.h"
 
 Settings::Settings() {
-    memcpy_P(&_data, &default_settings, sizeof(SettingsData));
+    memcpy_P(&data, &default_settings, sizeof(SettingsData));
 
-    _presets = new PresetData[PRESET_COUNT];
     for (uint8_t i = 0; i < PRESET_COUNT; i++) {
-        memcpy_P(&_presets[i], &default_preset, sizeof(PresetData));
+        memcpy_P(&presets[i], &default_preset, sizeof(PresetData));
     }
 
     if (!verify()) reset();
     read_data();
-}
-
-uint8_t Settings::getMidiChannel() {
-    return _data.midiChannel;
-}
-bool Settings::getMidiThru() {
-    return _data.midiThru;
-}
-
-uint8_t Settings::getBrightness() {
-    return _data.brightness;
-}
-
-uint8_t Settings::getArgbCount() {
-    return max(_data.argbCount, 1);
-}
-FastLedType Settings::getArgbType() {
-    return (FastLedType)_data.argbType;
-}
-
-uint8_t Settings::getDmxCount() {
-    return max(_data.dmxCount, 1);
-}
-uint8_t Settings::getDmxChannelSize() {
-    return max(_data.dmxChannelSize, 3);
-}
-uint8_t Settings::getDmxChannelOffset() {
-    return max(_data.dmxChannelOffset, 1);
-}
-uint8_t Settings::getDmxBrightness() {
-    return _data.dmxBrightness;
-}
-uint8_t Settings::getDmxBrightnessChannel() {
-    return _data.dmxBrightnessChannel;
-}
-
-uint8_t Settings::getPreset() {
-    if (_data.preset >= PRESET_COUNT) return 0;
-    return _data.preset;
-}
-PresetData* Settings::getPresetData(uint8_t i) {
-    if (i >= PRESET_COUNT) i = 0;
-    return &_presets[i];
 }
 
 uint8_t Settings::read_version() {
@@ -68,18 +24,18 @@ bool Settings::verify() {
 
 bool Settings::read_data() {
     if (!verify()) return false;
-    EEPROM.get(SETTINGS_OFFSET, _data);
+    EEPROM.get(SETTINGS_OFFSET, data);
     for (uint8_t i = 0; i < PRESET_COUNT; i++) {
-        EEPROM.get(PRESET_OFFSET + PRESET_SIZE*i, _presets[i]);
+        EEPROM.get(PRESET_OFFSET + PRESET_SIZE*i, presets[i]);
     }
     return true;
 }
 
 void Settings::write_settings() {
-    EEPROM.put(SETTINGS_OFFSET, _data);
+    EEPROM.put(SETTINGS_OFFSET, data);
 }
 void Settings::write_preset(uint8_t i) {
-    EEPROM.put(PRESET_OFFSET + PRESET_SIZE*i, _presets[i]);
+    EEPROM.put(PRESET_OFFSET + PRESET_SIZE*i, presets[i]);
 }
 void Settings::write_data() {
     write_settings();
@@ -103,7 +59,7 @@ void Settings::reset() {
 }
 
 void Settings::datacpy(void * destination, bool adjust = false) {
-    memcpy(destination, &_data, sizeof(SettingsData));
+    memcpy(destination, &data, sizeof(SettingsData));
     if (adjust) {
         SettingsData *ptr = reinterpret_cast<SettingsData *>(destination);
         ptr->dmxBrightness /= 2;
@@ -111,7 +67,7 @@ void Settings::datacpy(void * destination, bool adjust = false) {
 }
 void Settings::presetcpy(void * destination, uint8_t i, bool adjust = false) {
     if (i >= PRESET_COUNT) return;
-    memcpy(destination, &_presets[i], sizeof(PresetData));
+    memcpy(destination, &presets[i], sizeof(PresetData));
     if (adjust) {
         PresetData *ptr = reinterpret_cast<PresetData *>(destination);
         ptr->color_rgb.r /= 2;
@@ -124,22 +80,22 @@ void Settings::presetcpy(void * destination, uint8_t i, bool adjust = false) {
 }
 
 void Settings::datawrite(void * source, bool adjust = false) {
-    memcpy(&_data, source, sizeof(SettingsData));
+    memcpy(&data, source, sizeof(SettingsData));
     if (adjust) {
-        _data.dmxBrightness *= 2;
+        data.dmxBrightness *= 2;
     }
     write_settings();
 }
 void Settings::presetwrite(void * source, uint8_t i, bool adjust = false) {
     if (i >= PRESET_COUNT) return;
-    memcpy(&_presets[i], source, sizeof(PresetData));
+    memcpy(&presets[i], source, sizeof(PresetData));
     if (adjust) {
-        _presets[i].color_rgb.r *= 2;
-        _presets[i].color_rgb.g *= 2;
-        _presets[i].color_rgb.b *= 2;
-        _presets[i].color_hsv.h *= 2;
-        _presets[i].color_hsv.s *= 2;
-        _presets[i].color_hsv.v *= 2;
+        presets[i].color_rgb.r *= 2;
+        presets[i].color_rgb.g *= 2;
+        presets[i].color_rgb.b *= 2;
+        presets[i].color_hsv.h *= 2;
+        presets[i].color_hsv.s *= 2;
+        presets[i].color_hsv.v *= 2;
     }
     write_preset(i);
 }

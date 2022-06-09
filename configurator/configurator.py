@@ -18,7 +18,7 @@ import webbrowser
 
 from sysex import ColorSpraySysex, MANUFACTURER_ID, DEVICE_ID
 
-SETTINGS_VERSION        = 3
+SETTINGS_VERSION        = 4
 PRESET_COUNT            = 15
 
 root = Tk()
@@ -61,37 +61,6 @@ class ColorMode(Enum):
     Palette     = 3
     ChaseRgb    = 4
     ChaseHsv    = 5
-
-class ArgbType(Enum):
-    NONE        = 0
-    NEOPIXEL    = 1
-#    SM16703     = 2
-#    TM1829      = 3
-#    TM1812      = 4
-    TM1809      = 5
-    TM1804      = 6
-    TM1803      = 7
-    UCS1903     = 8
-#    UCS1903B    = 9
-#    UCS1904     = 10
-#    UCS2903     = 11
-    WS2812      = 12
-#    WS2852      = 13
-    WS2812B     = 14
-#    GS1903      = 15
-#    SK6812      = 16
-#    SK6822      = 17
-#    APA106      = 18
-#    PL9823      = 19
-    WS2811      = 20
-    WS2813      = 21
-#    APA104      = 22
-#    WS2811_400  = 23
-#    GE8822      = 24
-#    GW6205      = 25
-#    GW6205_400  = 26
-#    LPD1886     = 27
-#    LPD1886_8BIT = 28
 
 class Palette(Enum):
     Cloud           = 0
@@ -217,13 +186,12 @@ def build_color_slider(parent, text, var, callback, default=0):
     return frame, slider, number
 
 class SettingsData:
-    data_keys = ["midiChannel", "midiThru", "brightness", "argbCount", "argbType", "dmxCount", "dmxChannelSize", "dmxChannelOffset", "dmxBrightness", "dmxBrightnessChannel", "preset"]
+    data_keys = ["midiChannel", "midiThru", "brightness", "argbCount", "dmxCount", "dmxChannelSize", "dmxChannelOffset", "dmxBrightness", "dmxBrightnessChannel", "preset"]
     def __init__(self):
         self.midiChannel = 0
         self.midiThru = True
         self.brightness = 64
         self.argbCount = 12
-        self.argbType = ArgbType.WS2812B
         self.dmxCount = 1
         self.dmxChannelSize = 3
         self.dmxChannelOffset = 1
@@ -236,7 +204,6 @@ class SettingsData:
             'midiThru': self.midiThru,
             'brightness': self.brightness,
             'argbCount': self.argbCount,
-            'argbType': self.argbType.value,
             'dmxCount': self.dmxCount,
             'dmxChannelSize': self.dmxChannelSize,
             'dmxChannelOffset': self.dmxChannelOffset,
@@ -253,8 +220,6 @@ class SettingsData:
             self.brightness = int(data['brightness'])
         if 'argbCount' in data:
             self.argbCount = int(data['argbCount'])
-        if 'argbType' in data:
-            self.argbType = ArgbType(int(data['argbType']))
         if 'dmxCount' in data:
             self.dmxCount = int(data['dmxCount'])
         if 'dmxChannelSize' in data:
@@ -297,10 +262,6 @@ class SettingsData:
         argb_count_frame, argb_count_number = build_number(argb_frame, "ARGB Count", self.argbCount_var, 1, 127, str(self.argbCount), self.updateArgbCount)
         argb_count_frame.pack(side="left", fill="x", expand=True)
 
-        self.argbType_var = StringVar()
-        argb_type_frame, argb_type_combo = build_combobox(argb_frame, "ARGB Type", self.argbType_var, [name for name, value in vars(ArgbType).items() if not name.startswith("_")], self.argbType.name, self.updateArgbType)
-        argb_type_frame.pack(side="right", fill="x", expand=True)
-
         dmx_channel_row = ttk.Frame(self.frame, borderwidth=0, padding=0)
         dmx_channel_row.pack(fill="x")
 
@@ -342,11 +303,6 @@ class SettingsData:
         self.brightness = self.brightness_var.get()
     def updateArgbCount(self):
         self.argbCount = int(self.argbCount_var.get())
-    def updateArgbType(self, event=False):
-        for name, value in vars(ArgbType).items():
-            if name == self.argbType_var.get():
-                self.argbType = ArgbType(value)
-                break
     def updateDmxCount(self):
         self.dmxCount = int(self.dmxCount_var.get())
     def updateDmxChannelSize(self):
@@ -370,7 +326,6 @@ class SettingsData:
         self.midiThru_var.set(self.midiThru)
         self.brightness_var.set(self.brightness)
         self.argbCount_var.set(str(self.argbCount))
-        self.argbType_var.set(self.argbType.name)
         self.dmxCount_var.set(str(self.dmxCount))
         self.dmxChannelSize_var.set(str(self.dmxChannelSize))
         self.dmxChannelOffset_var.set(str(self.dmxChannelOffset))
