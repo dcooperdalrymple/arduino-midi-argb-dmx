@@ -5,3 +5,7 @@ fp-info-cache
 *.gx
 __pycache__
 *.json
+*.bin
+*.eep
+*.elf
+*.hex

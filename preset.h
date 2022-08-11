@@ -2,7 +2,6 @@
 #define PRESET_H
 
 #include <avr/pgmspace.h>
-#include <FastLED.h>
 #include "color.h"
 
 typedef struct _PresetData {

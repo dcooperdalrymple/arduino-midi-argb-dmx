@@ -6,8 +6,12 @@
  * Version:     1.0
  */
 
+#define ARGB_ENABLED    true
+#define DMX_ENABLED     true
+#define RGBW_ENABLED    true
+
 #define USB_MIDI        true
-#define USB_TIMEOUT     2000
+#define USB_TIMEOUT     2000 // Only used for serial debugging
 
 #if USB_MIDI
 #include <USB-MIDI.h>
@@ -30,9 +34,15 @@ USBMIDI_CREATE_CUSTOM_INSTANCE(0, MIDICoreUSB, CustomMidiSettings);
 #define SerialMidiMessage MIDI_NAMESPACE::MidiInterface<MIDI_NAMESPACE::SerialMIDI<HardwareSerial>, CustomMidiSettings>::MidiMessage
 MIDI_CREATE_CUSTOM_INSTANCE(HardwareSerial, Serial1, MIDICoreSerial, CustomMidiSettings);
 
-#include <FastLED.h>
-#include <DmxSimple.h> // Included after FastLED.h to prevent loading of default DMX controller
-#include "dmx.h"
+#if ARGB_ENABLED
+#include "controller_argb.h"
+#endif
+#if DMX_ENABLED
+#include "controller_dmx.h"
+#endif
+#if RGBW_ENABLED
+#include "controller_rgbw.h"
+#endif
 
 #include "sysex.h"
 #include "color.h"
@@ -43,36 +53,39 @@ MIDI_CREATE_CUSTOM_INSTANCE(HardwareSerial, Serial1, MIDICoreSerial, CustomMidiS
 #define LED             13
 #define LED_DURATION    10
 
+#define ARGB_MAX        120
+#if ARGB_ENABLED
 #define ARGB_PIN        2
 #define ARGB_ORDER      GRB
 #define ARGB_TYPE       WS2812B
-#define ARGB_MAX        120
-static CRGB argbLights[ARGB_MAX];
 static ARGB_TYPE<ARGB_PIN, ARGB_ORDER> argbController;
-// static ARGB_TYPE<ARGB_PIN> argbController; // For NEOPIXEL
 uint8_t modArgb = 1;
+#endif
 
+#define DMX_MAX         32
+#if DMX_ENABLED
 #define DMX_PIN         7
 #define DMX_ORDER       RGB
-#define DMX_MAX         32
-static CRGB dmxLights[DMX_MAX];
-static DMXSIMPLE<DMX_PIN, DMX_ORDER> dmxController;
+static DmxController<DMX_PIN, DMX_ORDER> dmxController;
 uint8_t modDmx = 1;
+#endif
 
-#define RGB_R           9
-#define RGB_G           10
-#define RGB_B           11
-#define RGB_W           5
+#if RGBW_ENABLED
+#define RGBW_R           9
+#define RGBW_G           10
+#define RGBW_B           11
+#define RGBW_W           5
+static RgbwController<RGBW_R, RGBW_G, RGBW_B, RGBW_W> rgbwController;
+#endif
 
-#define COLOR_UPDATE    10
-#define PALETTE_UPDATE  1
+#define COLOR_UPDATE    10 // ms
+#define PALETTE_UPDATE  2 // ms
 #define PALETTE_CHANGES 48
 #define PALETTE_ITERS   1
 #define PALETTE_MAX     16
-
+#define PALETTE_BLEND   LINEARBLEND
 PresetData current_preset = default_preset;
 CRGBPalette16 current_palette(CRGB::Black);
-TBlendType blending = LINEARBLEND;
 
 Settings settings;
 
@@ -92,15 +105,6 @@ void setup() {
 
     pinMode(0, INPUT);
     pinMode(1, OUTPUT);
-
-    pinMode(RGB_R, OUTPUT);
-    analogWrite(RGB_R, 0);
-    pinMode(RGB_G, OUTPUT);
-    analogWrite(RGB_G, 0);
-    pinMode(RGB_B, OUTPUT);
-    analogWrite(RGB_B, 0);
-    pinMode(RGB_W, OUTPUT);
-    analogWrite(RGB_W, 0);
 
     #if USB_MIDI
     #else
@@ -134,10 +138,7 @@ void setup() {
     digitalWrite(LED, LOW); // Indicate that initialization is complete
 }
 
-bool firstConfigure = true;
 void configure() {
-    if (!firstConfigure) FastLED.clearData();
-
     #if USB_MIDI
     #else
     unsigned long usb_start = millis();
@@ -163,49 +164,42 @@ void configure() {
     }
     #endif
 
+    // MIDI
     if (settings.data.midiThru) {
         MIDICoreSerial.turnThruOn();
     } else {
         MIDICoreSerial.turnThruOff();
     }
 
-    if (firstConfigure) {
-        argbController.init();
-        argbController.setCorrection(TypicalLEDStrip);
-    }
+    // ARGB
+    #if ARGB_ENABLED
+    argbController.setCount(min(settings.data.argbCount, ARGB_MAX));
     if (settings.data.argbCount > 0) {
         modArgb = max(floor((float)min(settings.data.dmxCount, DMX_MAX) / (float)min(settings.data.argbCount, ARGB_MAX)), 1);
-        argbController.setLeds(argbLights, min(settings.data.argbCount, ARGB_MAX));
-    } else {
-        argbController.setLeds(NULL, 0);
     }
+    #endif
 
-    if (firstConfigure) {
-        dmxController.init();
-        dmxController.assign(&settings);
-    }
+    // DMX
+    #if DMX_ENABLED
+    dmxController.configure(&settings.data);
+    dmxController.setCount(min(settings.data.dmxCount, DMX_MAX));
     if (settings.data.dmxCount > 0) {
         modDmx = max(floor((float)min(settings.data.argbCount, ARGB_MAX) / (float)min(settings.data.dmxCount, DMX_MAX)), 1);
-        dmxController.setLeds(dmxLights, min(settings.data.dmxCount, DMX_MAX));
-    } else {
-        dmxController.setLeds(NULL, 0);
     }
-    dmxController.update();
+    #endif
 
-    FastLED.setBrightness(settings.data.brightness);
-
+    // Load Default Preset
     if (settings.data.preset > 0) {
         loadPreset(settings.data.preset - 1);
     }
-
-    firstConfigure = false;
 }
 
 CRGBPalette16 target_palette(CRGB::Black);
-unsigned long palette_millis;
 uint8_t palette_index = 0;
 float palette_pos = 0;
 
+unsigned long color_millis = -1;
+unsigned long palette_millis = -1;
 unsigned long led_millis = -1;
 
 #if USB_MIDI
@@ -217,22 +211,31 @@ void messageUsbToUart(MidiMessage message) {
 }
 #endif
 
+unsigned long curr_millis;
 void loop() {
-    EVERY_N_MILLISECONDS(COLOR_UPDATE) {
+    curr_millis = millis();
+
+    if (color_millis >= 0 && curr_millis - color_millis > COLOR_UPDATE) {
+        color_millis = curr_millis;
+
         palette_pos += current_preset.palette_speed / 32.0f;
         if (palette_pos >= 256.0f) palette_pos -= 256.0f;
         palette_index = (uint8_t)palette_pos;
 
-        switch (current_preset.mode) {
-            default:
-                FillLEDsFromPaletteColors(palette_index);
-                break;
-        }
-
-        FastLED.show();
+        #if ARGB_ENABLED
+        argbController.show();
+        #endif
+        #if DMX_ENABLED
+        dmxController.show();
+        #endif
+        #if RGBW_ENABLED
+        rgbwController.show();
+        #endif
     }
 
-    EVERY_N_MILLISECONDS(PALETTE_UPDATE) {
+    if (palette_millis >= 0 && curr_millis - palette_millis > COLOR_UPDATE) {
+        palette_millis = curr_millis;
+
         #if PALETTE_ITERS > 1
         for (uint8_t i = 0; i < PALETTE_ITERS; i++) {
             nblendPaletteTowardPalette(current_palette, target_palette, PALETTE_CHANGES);
@@ -242,7 +245,7 @@ void loop() {
         #endif
     }
 
-    if (led_millis >= 0 && millis() - led_millis > LED_DURATION) {
+    if (led_millis >= 0 && curr_millis - led_millis > LED_DURATION) {
         digitalWrite(LED, LOW);
         led_millis = -1;
     }
@@ -260,47 +263,50 @@ void triggerLed() {
 
 // LED Functions
 
-uint8_t getW(CRGB color) {
-    return min(color.r, min(color.g, color.b));
+void mode_colorOff(CRGB *c, uint8_t index, uint16_t count) {
+    *c = CRGB::Black;
+}
+void mode_solidRgb(CRGB *c, uint8_t index, uint16_t count) {
+    *c = current_preset.color_rgb;
+}
+void mode_solidHsv(CRGB *c, uint8_t index, uint16_t count) {
+    *c = current_preset.color_hsv;
 }
 
-void FillLEDsFromPaletteColors(uint8_t index) {
-    uint8_t brightness = 255;
-    CRGB c = ColorFromPalette(current_palette, index, brightness, blending);
-
-    analogWrite(RGB_R, c.r);
-    analogWrite(RGB_G, c.g);
-    analogWrite(RGB_B, c.b);
-    analogWrite(RGB_W, getW(c));
-
-    argbLights[0] = c;
-    dmxLights[0] = c;
-
-    uint8_t iArgb = 1;
-    uint8_t iDmx = 1;
-    for (int i = 1; i < max(min(settings.data.argbCount, ARGB_MAX), min(settings.data.dmxCount, DMX_MAX)); i++) {
-        index += 3;
-        c = ColorFromPalette(current_palette, index, brightness, blending);
-        if (i % modArgb == 0 && iArgb < min(settings.data.argbCount, ARGB_MAX)) argbLights[iArgb++] = c;
-        if (i % modDmx == 0 && iDmx < min(settings.data.dmxCount, DMX_MAX)) dmxLights[iDmx++] = c;
-    }
+void mode_palette(CRGB *c, uint8_t index, uint16_t count) {
+    if (index > count) return;
+    *c = ColorFromPalette(current_palette, palette_index + index, 255, PALETTE_BLEND); // 255 = brightness
 }
+#if ARGB_ENABLED
+void mode_palette_argb(CRGB *c, uint8_t index, uint16_t count) {
+    mode_palette(c, index * modArgb, count);
+}
+#endif
+#if DMX_ENABLED
+void mode_palette_dmx(CRGB *c, uint8_t index, uint16_t count) {
+    mode_palette(c, index * modDmx, count);
+}
+#endif
 
 void updatePalette() {
+    RgbCallback cb;
     switch (current_preset.mode) {
         case ColorOff:
-            target_palette = CRGBPalette16(CRGB::Black);
+            cb = &mode_colorOff;
         case SolidRgb:
-            target_palette = CRGBPalette16(current_preset.color_rgb);
+            cb = &mode_solidRgb;
             break;
         case SolidHsv:
-            target_palette = CRGBPalette16(current_preset.color_hsv);
+            cb = &mode_solidHsv;
             break;
         case Palette:
-            target_palette = *palettes[current_preset.palette];
+            cb = &mode_palette;
+            target_palette = *GlobalPalettes[current_preset.palette];
             break;
         case ChaseRgb:
         case ChaseHsv:
+            cb = &mode_palette;
+
             CRGB *entries = new CRGB[PALETTE_MAX];
             for (uint8_t i = 0; i < PALETTE_MAX; i++) {
                 entries[i] = CRGB::Black;
@@ -318,6 +324,25 @@ void updatePalette() {
             delete entries;
             break;
     }
+
+    if (cb == &mode_palette) {
+        #if ARGB_ENABLED
+        argbController.setCallback(&mode_palette_argb);
+        #endif
+        #if DMX_ENABLED
+        dmxController.setCallback(&mode_palette_dmx);
+        #endif
+    } else {
+        #if ARGB_ENABLED
+        argbController.setCallback(cb);
+        #endif
+        #if DMX_ENABLED
+        dmxController.setCallback(cb);
+        #endif
+    }
+    #if RGBW_ENABLED
+    rgbwController.setCallback(cb);
+    #endif
 }
 
 void loadPreset(uint8_t i) {

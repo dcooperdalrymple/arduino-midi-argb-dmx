@@ -4,7 +4,6 @@
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
 #include <MIDI.h>
-#include <FastLED.h>
 
 #include "sysex.h"
 #include "preset.h"
