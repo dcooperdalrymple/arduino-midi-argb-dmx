@@ -100,4 +100,4 @@ Copy and paste `plugins/color-spray-jsfx` into your REAPER JSFX install director
 
 ---
 
-[OSHW] US00211 | Certified open source hardware | oshwa.org/cert.
+[OSHW] US002117 | Certified open source hardware | oshwa.org/cert.
